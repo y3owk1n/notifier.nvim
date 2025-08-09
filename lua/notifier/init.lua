@@ -153,6 +153,10 @@ local V = {}
 ---Vim API reference for cleaner code
 local api = vim.api
 
+---@private
+---Flag to prevent setup from running multiple times
+local did_setup = false
+
 ------------------------------------------------------------------
 -- Type Definitions
 ------------------------------------------------------------------
@@ -1327,6 +1331,11 @@ end
 ---   })
 ---@usage ]]
 function Notifier.setup(user_config)
+  if did_setup then
+    return
+  end
+  did_setup = true
+
   -- Merge configurations
   Notifier.config = vim.tbl_deep_extend("force", Notifier.defaults, user_config or {})
 
