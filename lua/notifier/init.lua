@@ -997,6 +997,7 @@ function Notifier.notify(msg, level, opts)
         notif.hl_group = hl_group
         notif._notif_formatter = _notif_formatter
         notif._notif_formatter_data = _notif_formatter_data
+        notif._expired = false
         U.debounce_render()
         return
       end
@@ -1013,6 +1014,7 @@ function Notifier.notify(msg, level, opts)
     created_at = now,
     updated_at = nil,
     hl_group = hl_group,
+    _expired = false,
     _notif_formatter = _notif_formatter,
     _notif_formatter_data = _notif_formatter_data,
   })
