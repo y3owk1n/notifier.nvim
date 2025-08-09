@@ -160,6 +160,8 @@ vim.notify("Configuration reloaded", vim.log.levels.INFO)
 vim.notify("Build failed:\n- Syntax error on line 42\n- Missing dependency")
 ```
 
+<https://github.com/user-attachments/assets/f2c0baac-665f-4930-ac35-45dde5540343>
+
 ### Advanced Options with Data and Inline Formatters
 
 ```lua
@@ -223,6 +225,8 @@ vim.notify("", vim.log.levels.WARN, {
 })
 ```
 
+<https://github.com/user-attachments/assets/90a2a491-e1af-4fee-8fe4-89d59748cf00>
+
 ### Custom Highlight Groups
 
 ```lua
@@ -265,6 +269,8 @@ require("notifier").setup({
   notif_formatter = my_formatter
 })
 ```
+
+<https://github.com/user-attachments/assets/562c19c1-93d0-43c6-a4be-ede562ae6437>
 
 ### Inline Custom Formatters with Data
 
@@ -321,6 +327,8 @@ vim.notify("", vim.log.levels.INFO, {
   }
 })
 ```
+
+<https://github.com/user-attachments/assets/06145f69-6440-438c-a68a-9e0e5ef00853>
 
 ### Advanced Data-Driven Formatters
 
@@ -421,6 +429,8 @@ vim.notify("", vim.log.levels.INFO, {
 })
 ```
 
+<https://github.com/user-attachments/assets/cb70c877-18ea-4d0f-a78a-471d09b839fa>
+
 ### Real-World Integration Examples
 
 ```lua
@@ -463,6 +473,8 @@ update_download_progress("large-file.zip", 0, 100)      -- 0%
 update_download_progress("large-file.zip", 50, 100)     -- 50%
 update_download_progress("large-file.zip", 100, 100)    -- 100%
 ```
+
+<https://github.com/user-attachments/assets/75eaba94-4b71-41a4-8969-ccb9c62ce06d>
 
 ## 🔧 Commands and Functions
 
