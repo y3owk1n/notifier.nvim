@@ -255,7 +255,8 @@ Notifier.Config                                   *notifier.api.Notifier.Config*
         {group_configs?}            (table<Notifier.GroupConfigsKey,Notifier.GroupConfigs>)                       Configuration for each notification group.
 
 
-Notifier.notify({msg}, {level?}, {opts?})                  *notifier.api.notify*
+                                                           *notifier.api.notify*
+Notifier.notify({msg}, {level?}, {opts?})
     ---------------------------------------------------------------
     Enhanced vim.notify replacement with group and formatting support
 
