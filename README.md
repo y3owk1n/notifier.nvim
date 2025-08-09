@@ -191,7 +191,6 @@ vim.notify("Download complete!", vim.log.levels.INFO, {
 -- Inline formatter with custom data - no message needed!
 vim.notify("", vim.log.levels.INFO, {
   id = "server-status",
-  timeout = 0, -- Persistent notification
   _notif_formatter = function(opts)
     local data = opts.notif._notif_formatter_data
     local status_icon = data.online and "🟢" or "🔴"
@@ -368,7 +367,6 @@ vim.notify("", vim.log.levels.INFO, {
 -- LSP diagnostic summary formatter
 vim.notify("", vim.log.levels.WARN, {
   id = "lsp-diagnostics",
-  timeout = 0, -- Persistent
   _notif_formatter = function(opts)
     local data = opts.notif._notif_formatter_data
     local parts = {
