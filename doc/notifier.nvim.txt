@@ -183,7 +183,7 @@ Notifier.Notification                    *notifier.public.Notifier.Notification*
         {msg?}                    (string)                                                                      Message content to display (can contain newlines)
         {icon?}                   (string)                                                                      Custom icon to display (overrides default level icons)
         {level?}                  (integer)                                                                     Log level from vim.log.levels (defaults to INFO)
-        {timeout?}                (integer)                                                                     Timeout in milliseconds before auto-dismissal
+        {timeout?}                (integer)                                                                     Timeout in milliseconds before auto-dismissal, set to 0 for no timeout
         {created_at?}             (number)                                                                      Unix timestamp when notification was first created
         {updated_at?}             (number)                                                                      Unix timestamp when notification was last updated
         {hl_group?}               (string)                                                                      Custom highlight group for the notification text
