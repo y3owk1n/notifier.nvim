@@ -173,7 +173,8 @@ vim.notify("Long running task started", vim.log.levels.INFO, {
 
 -- Target specific group
 vim.notify("Debug info", vim.log.levels.DEBUG, {
-  group_name = "top-left"
+  group_name = "top-left",
+  timeout = 0 -- Always there unless manually dismissed
 })
 
 -- Updateable notification with ID

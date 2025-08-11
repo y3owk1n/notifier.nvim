@@ -210,7 +210,7 @@ local setup_complete = false
 ---@field msg? string Message content to display (can contain newlines)
 ---@field icon? string Custom icon to display (overrides default level icons)
 ---@field level? integer Log level from vim.log.levels (defaults to INFO)
----@field timeout? integer Timeout in milliseconds before auto-dismissal
+---@field timeout? integer Timeout in milliseconds before auto-dismissal, set to 0 for no timeout
 ---@field created_at? number Unix timestamp when notification was first created
 ---@field updated_at? number Unix timestamp when notification was last updated
 ---@field hl_group? string Custom highlight group for the notification text
@@ -1083,7 +1083,7 @@ end
 ---@param timeout any Input timeout value
 ---@return integer Valid timeout in milliseconds
 function Validator.validate_timeout(timeout)
-  if type(timeout) ~= "number" or timeout < 0 then
+  if type(timeout) ~= "number" then
     return M.config.default_timeout or DEFAULT_CONFIG.default_timeout or 3000
   end
   return timeout
@@ -1157,7 +1157,7 @@ function NotificationManager.notify(msg, level, opts)
 
   local found_notif
   for _, n in pairs(group.notifications) do
-    if n.id == id then
+    if n.id ~= nil and id ~= nil and n.id == id then
       found_notif = n
       break
     end
@@ -1247,7 +1247,7 @@ local function start_cleanup_timer()
             goto continue
           end
           local elapsed_ms = (now - ((notif.updated_at or notif.created_at) * 1000))
-          if elapsed_ms >= notif.timeout then
+          if notif.timeout > 0 and elapsed_ms >= notif.timeout then
             notif._expired = true
             changed = true
           end
