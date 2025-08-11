@@ -1,7 +1,7 @@
-local cmd = require("cmd")
+local notifier = require("notifier")
 
 local M = {}
 
-M.check = cmd.check
+M.check = notifier.check
 
 return M
