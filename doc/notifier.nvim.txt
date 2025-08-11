@@ -12,8 +12,8 @@ Features:
 
 # Setup ~
 
-This module needs to be explicitly set up with `require('notifier').setup({})`.
-It will replace `vim.notify` with enhanced functionality.
+This module needs to be set up with `require('notifier').setup({})` (replace
+`{}` with your `config` table).
 
 # Highlighting ~
 
@@ -31,41 +31,39 @@ Plugin defines several highlight groups:
  - `NotifierHistoryTitle` - for notification history floating window title (linked to `FloatTitle`)
 
 To change any highlight group, modify it directly with |:highlight|.
-<
+
 
 ==============================================================================
 Table of Contents                                            *notifier.contents*
 
 Setup ························································· |notifier.setup|
 Configuration ················································ |notifier.config|
-API ····························································· |notifier.api|
+Commands ··················································· |notifier.commands|
+Types ························································· |notifier.types|
+Public API ··················································· |notifier.public|
 
 ==============================================================================
 Setup                                                           *notifier.setup*
-
-==============================================================================
 
                                                               *Notifier.setup()*
                                                                 *Notifier-setup*
 # Module setup ~
 
 >lua
-  require('notifier').setup() -- use default config
-  -- OR
-  require('notifier').setup({}) -- replace {} with your config table
+   require('notifier').setup() -- use default config
+   -- OR
+   require('notifier').setup({}) -- replace {} with your config table
 <
 
 ==============================================================================
 Configuration                                                  *notifier.config*
-
-==============================================================================
 
                                                                *Notifier.config*
 # Module config ~
 
 Default values:
 {
-  default_timeout = 3000, -- milliseconds
+  default_timeout = 3000,
   border = "none",
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
   default_group = "bottom-right",
@@ -106,92 +104,110 @@ Default values:
   notif_history_formatter = U.default_notif_history_formatter,
 }
 
-==============================================================================
-API                                                               *notifier.api*
+## Group positioning ~
+
+Configure different notification groups for various positions:
+>lua
+   require('notifier').setup({
+     group_configs = {
+       ["bottom-right"] = {
+         anchor = "SE",
+         row = vim.o.lines - 2,
+         col = vim.o.columns,
+         winblend = 20,
+       },
+       ["top-center"] = {
+         anchor = "N",
+         row = 1,
+         col = vim.o.columns / 2,
+         winblend = 0,
+       }
+     }
+   })
+<
+
+## Custom formatters ~
+
+Override default notification formatting:
+>lua
+   require('notifier').setup({
+     notif_formatter = function(opts)
+       return {
+         { display_text = "[CUSTOM] " .. opts.line, hl_group = "Special", is_virtual = true }
+       }
+     end
+   })
+<
+
+## Timeout configuration ~
+
+Set global and per-notification timeouts:
+>lua
+   require('notifier').setup({
+     default_timeout = 5000, -- 5 seconds default
+   })
+
+   -- Per-notification timeout
+   vim.notify("Long message", vim.log.levels.INFO, { timeout = 10000 })
+<
 
 ==============================================================================
+Commands                                                     *notifier.commands*
 
-                                                                      *Notifier*
-                                                                 *notifier-main*
-Notifier                                                 *notifier.api.Notifier*
-    Main module table
+                                                              *:NotifierHistory*
+                                                     *Notifier-:NotifierHistory*
+# Show notification history ~
 
+Display all active notifications in a floating window with timestamps
+and enhanced formatting.
 
-Notifier.Notification                       *notifier.api.Notifier.Notification*
-    ---------------------------------------------------------------
-    Notification object containing all display and metadata information
+>vim
+   :NotifierHistory    " Show notification history
+<
 
-    Fields: ~
-        {id?}                     (string|number)                                                               Unique identifier for the notification. Allows updating existing notifications.
-        {msg?}                    (string)                                                                      The message content to display. Can contain newlines or be empty if using custom formatter.
-        {icon?}                   (string)                                                                      Custom icon to display with the notification. Overrides default level icons.
-        {level?}                  (integer)                                                                     Log level (vim.log.levels.ERROR, WARN, INFO, DEBUG, TRACE). Defaults to INFO.
-        {timeout?}                (integer)                                                                     Timeout in milliseconds before auto-dismissal. Defaults to config.default_timeout.
-        {created_at?}             (number)                                                                      Unix timestamp (seconds) when notification was first created.
-        {updated_at?}             (number)                                                                      Unix timestamp (seconds) when notification was last updated.
-        {hl_group?}               (string)                                                                      Custom highlight group for the notification text.
-        {_expired?}               (boolean)                                                                     Internal flag marking notification as expired during cleanup.
-        {_notif_formatter?}       (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Custom formatter function for this specific notification.
-        {_notif_formatter_data?}  (table)                                                                       Arbitrary data passed to the custom formatter function.
+                                                              *:NotifierDismiss*
+                                                     *Notifier-:NotifierDismiss*
+# Dismiss all notifications ~
 
+Immediately close all active notification windows.
 
-                                       *notifier.api.Notifier.NotificationGroup*
-Notifier.NotificationGroup : Notifier.Notification
-    Extended notification with group configuration
+>vim
+   :NotifierDismiss    " Dismiss all notifications
+<
 
-    Fields: ~
-        {group_name?}  (Notifier.GroupConfigsKey)  Target group for positioning this notification.
+==============================================================================
+Types                                                           *notifier.types*
 
-
-Notifier.Group                                     *notifier.api.Notifier.Group*
-    Internal group state management
+Notifier.Notification                    *notifier.public.Notifier.Notification*
 
     Fields: ~
-        {name}           (string)                   Group identifier matching config keys.
-        {buf}            (integer)                  Buffer handle for the floating window.
-        {win}            (integer)                  Window handle for the notification display.
-        {notifications}  (Notifier.Notification[])  Array of all notifications in this group.
-        {config}         (Notifier.GroupConfigs)    Configuration settings for this group.
+        {id?}                     (string|number)                                                               Unique identifier for updating existing notifications
+                                                                                                                Represents a single notification entry with display and metadata information.
+        {msg?}                    (string)                                                                      Message content to display (can contain newlines)
+        {icon?}                   (string)                                                                      Custom icon to display (overrides default level icons)
+        {level?}                  (integer)                                                                     Log level from vim.log.levels (defaults to INFO)
+        {timeout?}                (integer)                                                                     Timeout in milliseconds before auto-dismissal
+        {created_at?}             (number)                                                                      Unix timestamp when notification was first created
+        {updated_at?}             (number)                                                                      Unix timestamp when notification was last updated
+        {hl_group?}               (string)                                                                      Custom highlight group for the notification text
+        {group_name?}             (Notifier.GroupConfigsKey)                                                    Target group for positioning
+        {_expired?}               (boolean)                                                                     Internal flag marking notification as expired
+        {_notif_formatter?}       (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Custom formatter
+        {_notif_formatter_data?}  (table)                                                                       Arbitrary data passed to custom formatter
 
 
-Notifier.LogLevelKey                         *notifier.api.Notifier.LogLevelKey*
-    Mapping of log levels to display properties
-
-    Variants: ~
-        ("ERROR")
-        ("WARN")
-        ("INFO")
-        ("DEBUG")
-        ("TRACE")
-
-
-Notifier.LogLevelEntry                     *notifier.api.Notifier.LogLevelEntry*
-    Log level configuration mapping
+Notifier.Group                                  *notifier.public.Notifier.Group*
 
     Fields: ~
-        {level_key}  (Notifier.LogLevelKey)  String representation of the level.
-        {hl_group}   (string)                Default highlight group for this level.
+        {name}           (string)                   Group identifier matching config keys
+                                                    Internal group state management for notification positioning.
+        {buf}            (integer)                  Buffer handle for the floating window
+        {win}            (integer)                  Window handle for the notification display
+        {notifications}  (Notifier.Notification[])  Array of all notifications in this group
+        {config}         (Notifier.GroupConfigs)    Configuration settings for this group
 
 
-Notifier.LogLevelMap                         *notifier.api.Notifier.LogLevelMap*
-    Complete log level mapping table
-
-    Type: ~
-        table<integer,Notifier.LogLevelEntry>
-
-
-Notifier.Config.Padding                   *notifier.api.Notifier.Config.Padding*
-    Padding configuration for notification windows
-
-    Fields: ~
-        {top?}     (integer)  Top padding in characters. Default: 0.
-        {right?}   (integer)  Right padding in characters. Default: 0.
-        {bottom?}  (integer)  Bottom padding in characters. Default: 0.
-        {left?}    (integer)  Left padding in characters. Default: 0.
-
-
-Notifier.GroupConfigsKey                 *notifier.api.Notifier.GroupConfigsKey*
-    Available notification group positions
+Notifier.GroupConfigsKey              *notifier.public.Notifier.GroupConfigsKey*
 
     Variants: ~
         ("bottom-right")
@@ -200,167 +216,92 @@ Notifier.GroupConfigsKey                 *notifier.api.Notifier.GroupConfigsKey*
         ("bottom-left")
 
 
-Notifier.GroupConfigs                       *notifier.api.Notifier.GroupConfigs*
-    Group positioning and display configuration
+Notifier.GroupConfigs                    *notifier.public.Notifier.GroupConfigs*
 
     Fields: ~
-        {anchor}     ("NW"|"NE"|"SW"|"SE")  Window anchor point for positioning.
-        {row}        (integer)              Row position relative to the editor.
-        {col}        (integer)              Column position relative to the editor.
-        {winblend?}  (integer)              Window transparency (0-100). Default: 0.
+        {anchor}     ("NW"|"NE"|"SW"|"SE")  Window anchor point for positioning
+                                            Group positioning and display configuration.
+        {row}        (integer)              Row position relative to the editor
+        {col}        (integer)              Column position relative to the editor
+        {winblend?}  (integer)              Window transparency (0-100, default: 0)
 
 
-Notifier.FormattedNotifOpts           *notifier.api.Notifier.FormattedNotifOpts*
-    Raw formatted notification piece before computation
+Notifier.Config.Padding                *notifier.public.Notifier.Config.Padding*
 
     Fields: ~
-        {display_text}  (string)   The text content to display.
-        {hl_group?}     (string)   Highlight group to apply to this text segment.
-        {is_virtual?}   (boolean)  Whether this text should be rendered as virtual text. Default: false.
+        {top?}     (integer)  Top padding in characters (default: 0)
+                              Padding configuration for notification windows.
+        {right?}   (integer)  Right padding in characters (default: 0)
+        {bottom?}  (integer)  Bottom padding in characters (default: 0)
+        {left?}    (integer)  Left padding in characters (default: 0)
 
 
-                                        *notifier.api.Notifier.ComputedLineOpts*
+                                   *notifier.public.Notifier.FormattedNotifOpts*
+Notifier.FormattedNotifOpts
+
+    Fields: ~
+        {display_text}  (string)   The text content to display
+                                   Raw formatted notification piece before position computation.
+        {hl_group?}     (string)   Highlight group to apply to this text segment
+        {is_virtual?}   (boolean)  Whether this text should be rendered as virtual text
+
+
+                                     *notifier.public.Notifier.ComputedLineOpts*
 Notifier.ComputedLineOpts : Notifier.FormattedNotifOpts
-    Computed line piece with calculated positions
 
     Fields: ~
-        {col_start?}          (number)  Starting column position (0-indexed). Calculated internally.
-        {col_end?}            (number)  Ending column position (0-indexed). Calculated internally.
-        {virtual_col_start?}  (number)  Starting virtual column position. Calculated internally.
-        {virtual_col_end?}    (number)  Ending virtual column position. Calculated internally.
+        {col_start?}          (number)  Starting column position (0-indexed)
+                                        Computed line piece with calculated positions for rendering.
+        {col_end?}            (number)  Ending column position (0-indexed)
+        {virtual_col_start?}  (number)  Starting virtual column position
+        {virtual_col_end?}    (number)  Ending virtual column position
 
 
-                               *notifier.api.Notifier.NotificationFormatterOpts*
+                            *notifier.public.Notifier.NotificationFormatterOpts*
 Notifier.NotificationFormatterOpts
-    Parameters passed to notification formatter functions
 
     Fields: ~
-        {notif}          (Notifier.Notification)  The notification being formatted.
-        {line}           (string)                 Current line of the notification message.
-        {config}         (Notifier.Config)        Current plugin configuration.
-        {log_level_map}  (Notifier.LogLevelMap)   Log level to display property mapping.
+        {notif}          (Notifier.Notification)  The notification being formatted
+                                                  Parameters passed to notification formatter functions.
+        {line}           (string)                 Current line of the notification message
+        {config}         (Notifier.Config)        Current plugin configuration
+        {log_level_map}  (Notifier.LogLevelMap)   Log level to display property mapping
 
 
-Notifier.Config                                   *notifier.api.Notifier.Config*
-    Main plugin configuration
+Notifier.LogLevelEntry                  *notifier.public.Notifier.LogLevelEntry*
 
     Fields: ~
-        {default_timeout?}          (integer)                                                                     Default timeout in milliseconds for notifications. Default: 3000.
-        {border?}                   (string)                                                                      Border style for floating windows. Any valid nvim_open_win border. Default: "none".
-        {icons?}                    (table<integer,string>)                                                       Icons for each log level. Keys are vim.log.levels values.
-        {notif_formatter?}          (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format live notifications.
-        {notif_history_formatter?}  (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format notifications in history view.
-        {padding?}                  (Notifier.Config.Padding)                                                     Padding configuration for notification windows.
-        {default_group?}            (Notifier.GroupConfigsKey)                                                    Default group for notifications without explicit group.
-        {group_configs?}            (table<Notifier.GroupConfigsKey,Notifier.GroupConfigs>)                       Configuration for each notification group.
+        {level_key}  (string)  String representation of the level
+                               Mapping of log level to display properties.
+        {hl_group}   (string)  Default highlight group for this level
 
 
-                                                           *notifier.api.notify*
-Notifier.notify({msg}, {level?}, {opts?})
-    ---------------------------------------------------------------
-    Enhanced vim.notify replacement with group and formatting support
-
-    Displays notifications with advanced features like grouping, custom formatting,
-    and ID-based updating. Replaces existing notifications with matching IDs.
-
-    # Parameters ~
-
-     • {msg} (string) Message content, can contain newlines
-     • {level} (integer, optional) Log level from vim.log.levels
-     • {opts} (Notifier.NotificationGroup, optional) Additional options:
-       - {id}: Unique identifier for updating existing notifications
-       - {timeout}: Custom timeout in milliseconds
-       - {icon}: Override default level icon
-       - {hl_group}: Custom highlight group
-       - {group_name}: Target notification group for positioning
-       - {_notif_formatter}: Custom formatter function for this notification
-       - {_notif_formatter_data}: Data passed to custom formatter
-
-
-    Parameters: ~
-        {msg}     (string)                      Message content to display
-        {level?}  (integer)                     Log level (vim.log.levels.ERROR, WARN, INFO, DEBUG, TRACE)
-        {opts?}   (Notifier.NotificationGroup)  Additional notification options
-
-    Returns: ~
-        (nil)
-
-    Usage: ~
->lua
-           -- Basic notification
-           require('notifier').notify("Hello world!")
-
-           -- With custom options
-           require('notifier').notify("Warning message", vim.log.levels.WARN, {
-             id = "my-warning",
-             timeout = 5000,
-             group_name = "top-right"
-           })
-
-           -- Update existing notification
-           require('notifier').notify("Updated message", vim.log.levels.INFO, {
-             id = "my-warning"  -- Same ID updates the previous notification
-           })
-<
-
-
-Notifier.show_history()                              *notifier.api.show_history*
-    Display notification history in a floating window
-
-    Shows all currently active notifications across all groups in chronological order
-    with enhanced formatting including timestamps and level indicators.
-
-    # Features ~
-     • Scrollable floating window with all active notifications
-     • Chronological ordering (oldest to newest)
-     • Enhanced formatting with timestamps and log levels
-     • Keyboard shortcuts for closing (Esc, q, Ctrl-C)
-     • Auto-close when window loses focus
-
-
-    Usage: ~
->lua
-        require('notifier').show_history()
-<
-
-
-Notifier.dismiss_all()                                *notifier.api.dismiss_all*
-    Dismiss all active notifications immediately
-
-    Closes all notification windows and clears their buffers across all groups.
-    This provides an immediate way to clear the screen of notifications.
-
-
-    Usage: ~
->lua
-        require('notifier').dismiss_all()
-<
-
-
-                                                               *Notifier.config*
-Notifier.config                                            *notifier.api.config*
-    Current plugin configuration
+Notifier.LogLevelMap                      *notifier.public.Notifier.LogLevelMap*
 
     Type: ~
-        (Notifier.Config)
+        table<integer,Notifier.LogLevelEntry>
 
 
-                                                             *Notifier.defaults*
-Notifier.defaults                                        *notifier.api.defaults*
-    Default configuration values
+Notifier.Config                                *notifier.public.Notifier.Config*
 
-    Type: ~
-        (Notifier.Config)
+    Fields: ~
+        {default_timeout?}          (integer)                                                                     Default timeout in milliseconds (default: 3000)
+                                                                                                                  Main plugin configuration table.
+        {border?}                   (string)                                                                      Border style for floating windows (default: "none")
+        {icons?}                    (table<integer,string>)                                                       Icons for each log level (keys are vim.log.levels values)
+        {notif_formatter?}          (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format live notifications
+        {notif_history_formatter?}  (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format notifications in history view
+        {padding?}                  (Notifier.Config.Padding)                                                     Padding configuration for notification windows
+        {default_group?}            (Notifier.GroupConfigsKey)                                                    Default group for notifications without explicit group
+        {group_configs?}            (table<Notifier.GroupConfigsKey,Notifier.GroupConfigs>)                       Configuration for each notification group
 
+
+==============================================================================
+Public API                                                     *notifier.public*
 
                                                               *Notifier.setup()*
-Notifier.setup({user_config?})                              *notifier.api.setup*
+M.setup({user_config?})                                  *notifier.public.setup*
     Setup the notifier plugin with user configuration
-
-    Initializes the plugin with merged default and user configurations,
-    validates all settings, creates highlight groups, replaces vim.notify,
-    and starts the cleanup timer for automatic notification expiration.
-
 
     Parameters: ~
         {user_config?}  (Notifier.Config)  User configuration to merge with defaults
@@ -368,31 +309,42 @@ Notifier.setup({user_config?})                              *notifier.api.setup*
     Returns: ~
         (nil)
 
-    Usage: ~
->lua
-           -- Minimal setup
-           require('notifier').setup()
 
-           -- Custom configuration
-           require('notifier').setup({
-             default_timeout = 5000,
-             border = "rounded",
-             padding = { top = 1, right = 2, bottom = 1, left = 2 },
-             group_configs = {
-               ["bottom-right"] = {
-                 anchor = "SE",
-                 row = vim.o.lines - 3,
-                 col = vim.o.columns - 1,
-                 winblend = 20,
-               }
-             },
-             icons = {
-               [vim.log.levels.ERROR] = "✗ ",
-               [vim.log.levels.WARN] = "⚠ ",
-               [vim.log.levels.INFO] = "ℹ ",
-             }
-           })
-<
+                                                             *Notifier.notify()*
+M.notify({msg}, {level?}, {opts?})                      *notifier.public.notify*
+    Enhanced vim.notify replacement with group and formatting support
+
+    Parameters: ~
+        {msg}     (string)                 Message content to display
+        {level?}  (integer)                Log level (vim.log.levels.ERROR, WARN, INFO, DEBUG, TRACE)
+        {opts?}   (Notifier.Notification)  Additional notification options
+
+    Returns: ~
+        (nil)
+
+
+                                                       *Notifier.show_history()*
+M.show_history()                                  *notifier.public.show_history*
+    Display notification history in a floating window
+
+    Returns: ~
+        (nil)
+
+
+                                                        *Notifier.dismiss_all()*
+M.dismiss_all()                                    *notifier.public.dismiss_all*
+    Dismiss all active notifications immediately
+
+    Returns: ~
+        (nil)
+
+
+                                                           *Notifier.formatters*
+M.formatters                                        *notifier.public.formatters*
+    Built-in formatters for notifications
+
+    Type: ~
+        (table)
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:
