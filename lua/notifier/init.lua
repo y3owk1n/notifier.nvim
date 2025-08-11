@@ -1,3 +1,5 @@
+---@module "notifier"
+
 ---@brief [[
 ---*notifier.nvim* Smart notification system for Neovim
 ---*Notifier*
@@ -39,9 +41,6 @@
 
 ---@mod notifier.setup Setup
 
----@tag Notifier.setup()
----@tag Notifier-setup
-
 ---@brief [[
 ---# Module setup ~
 ---
@@ -50,11 +49,11 @@
 ---   -- OR
 ---   require('notifier').setup({}) -- replace {} with your config table
 ---<
+---
+---see also |notifier.setup()|
 ---@brief ]]
 
 ---@mod notifier.config Configuration
-
----@tag Notifier.config
 
 ---@brief [[
 ---# Module config ~
@@ -153,7 +152,6 @@
 ---@mod notifier.commands Commands
 
 ---@tag :NotifierHistory
----@tag Notifier-:NotifierHistory
 
 ---@brief [[
 ---# Show notification history ~
@@ -167,7 +165,6 @@
 ---@brief ]]
 
 ---@tag :NotifierDismiss
----@tag Notifier-:NotifierDismiss
 
 ---@brief [[
 ---# Dismiss all notifications ~
@@ -207,8 +204,8 @@ local setup_complete = false
 
 ---@mod notifier.types Types
 
----@class Notifier.Notification
 ---Represents a single notification entry with display and metadata information.
+---@class Notifier.Notification
 ---@field id? string|number Unique identifier for updating existing notifications
 ---@field msg? string Message content to display (can contain newlines)
 ---@field icon? string Custom icon to display (overrides default level icons)
@@ -222,8 +219,8 @@ local setup_complete = false
 ---@field _notif_formatter? fun(opts: Notifier.NotificationFormatterOpts): Notifier.FormattedNotifOpts[] Custom formatter
 ---@field _notif_formatter_data? table Arbitrary data passed to custom formatter
 
----@class Notifier.Group
 ---Internal group state management for notification positioning.
+---@class Notifier.Group
 ---@field name string Group identifier matching config keys
 ---@field buf integer Buffer handle for the floating window
 ---@field win integer Window handle for the notification display
@@ -236,49 +233,49 @@ local setup_complete = false
 ---| '"top-left"'
 ---| '"bottom-left"'
 
----@class Notifier.GroupConfigs
 ---Group positioning and display configuration.
+---@class Notifier.GroupConfigs
 ---@field anchor '"NW"'|'"NE"'|'"SW"'|'"SE"' Window anchor point for positioning
 ---@field row integer Row position relative to the editor
 ---@field col integer Column position relative to the editor
 ---@field winblend? integer Window transparency (0-100, default: 0)
 
----@class Notifier.Config.Padding
 ---Padding configuration for notification windows.
+---@class Notifier.Config.Padding
 ---@field top? integer Top padding in characters (default: 0)
 ---@field right? integer Right padding in characters (default: 0)
 ---@field bottom? integer Bottom padding in characters (default: 0)
 ---@field left? integer Left padding in characters (default: 0)
 
----@class Notifier.FormattedNotifOpts
 ---Raw formatted notification piece before position computation.
+---@class Notifier.FormattedNotifOpts
 ---@field display_text string The text content to display
 ---@field hl_group? string Highlight group to apply to this text segment
 ---@field is_virtual? boolean Whether this text should be rendered as virtual text
 
----@class Notifier.ComputedLineOpts : Notifier.FormattedNotifOpts
 ---Computed line piece with calculated positions for rendering.
+---@class Notifier.ComputedLineOpts : Notifier.FormattedNotifOpts
 ---@field col_start? number Starting column position (0-indexed)
 ---@field col_end? number Ending column position (0-indexed)
 ---@field virtual_col_start? number Starting virtual column position
 ---@field virtual_col_end? number Ending virtual column position
 
----@class Notifier.NotificationFormatterOpts
 ---Parameters passed to notification formatter functions.
+---@class Notifier.NotificationFormatterOpts
 ---@field notif Notifier.Notification The notification being formatted
 ---@field line string Current line of the notification message
 ---@field config Notifier.Config Current plugin configuration
 ---@field log_level_map Notifier.LogLevelMap Log level to display property mapping
 
----@class Notifier.LogLevelEntry
 ---Mapping of log level to display properties.
+---@class Notifier.LogLevelEntry
 ---@field level_key string String representation of the level
 ---@field hl_group string Default highlight group for this level
 
 ---@alias Notifier.LogLevelMap table<integer, Notifier.LogLevelEntry>
 
----@class Notifier.Config
 ---Main plugin configuration table.
+---@class Notifier.Config
 ---@field default_timeout? integer Default timeout in milliseconds (default: 3000)
 ---@field border? string Border style for floating windows (default: "none")
 ---@field icons? table<integer, string> Icons for each log level (keys are vim.log.levels values)
@@ -1422,7 +1419,7 @@ end
 DEFAULT_CONFIG.notif_formatter = Formatters.default_notif_formatter
 DEFAULT_CONFIG.notif_history_formatter = Formatters.default_notif_history_formatter
 
----@tag Notifier.setup()
+---@tag notifier.setup()
 
 ---Setup the notifier plugin with user configuration
 ---@param user_config? Notifier.Config User configuration to merge with defaults
@@ -1456,7 +1453,7 @@ function M.setup(user_config)
   setup_complete = true
 end
 
----@tag Notifier.notify()
+---@tag notifier.notify()
 
 ---Enhanced vim.notify replacement with group and formatting support
 ---@param msg string Message content to display
@@ -1467,7 +1464,7 @@ function M.notify(msg, level, opts)
   NotificationManager.notify(msg, level, opts)
 end
 
----@tag Notifier.show_history()
+---@tag notifier.show_history()
 
 ---Display notification history in a floating window
 ---@return nil
@@ -1475,7 +1472,7 @@ function M.show_history()
   UI.show_history()
 end
 
----@tag Notifier.dismiss_all()
+---@tag notifier.dismiss_all()
 
 ---Dismiss all active notifications immediately
 ---@return nil
@@ -1486,8 +1483,6 @@ end
 -- ============================================================================
 -- BUILT-INS & FORMATTERS
 -- ============================================================================
-
----@tag Notifier.formatters
 
 ---Built-in formatters for notifications
 ---@type table
