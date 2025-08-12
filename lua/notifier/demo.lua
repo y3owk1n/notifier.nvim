@@ -4,15 +4,6 @@ local plugin = require("notifier")
 
 local M = {}
 
--- Custom formatter for the demo welcome message
-local function welcome_formatter(opts)
-  return {
-    { display_text = "🎉 ", hl_group = "Special", is_virtual = true },
-    { display_text = opts.line, hl_group = "Title", is_virtual = true },
-    { display_text = " 🎉", hl_group = "Special", is_virtual = true },
-  }
-end
-
 -- Custom formatter for progress updates
 local function progress_formatter(opts)
   local progress_bar = "█"
@@ -20,7 +11,7 @@ local function progress_formatter(opts)
   local bar = string.rep(progress_bar, steps) .. string.rep("░", 10 - steps)
 
   return {
-    { display_text = "⚡ ", hl_group = "Identifier", is_virtual = true },
+    { display_text = "󰏥 ", hl_group = "Identifier", is_virtual = true },
     { display_text = opts.line, hl_group = "Normal", is_virtual = true },
     { display_text = " [", hl_group = "Comment", is_virtual = true },
     { display_text = bar, hl_group = "String", is_virtual = true },
@@ -43,6 +34,7 @@ end
 
 -- Step 2: Basic log levels showcase
 demo_steps[2] = function()
+  plugin.dismiss_all(false)
   local levels = {
     { vim.log.levels.INFO, "This is an info message" },
     { vim.log.levels.WARN, "This is a warning message" },
@@ -60,79 +52,81 @@ demo_steps[2] = function()
   end
 
   vim.defer_fn(function()
+    plugin.dismiss_all(false)
     vim.notify("Now look at the top left corner!")
   end, 4000)
-
-  plugin.dismiss_all(false)
 end
 
 -- Step 3: Multiple groups demonstration
 demo_steps[3] = function()
+  plugin.dismiss_all(false)
+
   vim.notify("Top Left Corner", vim.log.levels.INFO, {
     group_name = "top-left",
-    timeout = 4000,
+    timeout = 0,
   })
 
   vim.defer_fn(function()
     vim.notify("Top Center Corner", vim.log.levels.INFO, {
       group_name = "top-center",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 1)
+  end, 400 * 1)
 
   vim.defer_fn(function()
     vim.notify("Top Right Corner", vim.log.levels.INFO, {
       group_name = "top-right",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 2)
+  end, 400 * 2)
 
   vim.defer_fn(function()
     vim.notify("Left Center Corner", vim.log.levels.INFO, {
       group_name = "left-center",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 3)
+  end, 400 * 3)
 
   vim.defer_fn(function()
     vim.notify("True Center Corner", vim.log.levels.INFO, {
       group_name = "center",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 4)
+  end, 400 * 4)
 
   vim.defer_fn(function()
     vim.notify("Right Center Corner", vim.log.levels.INFO, {
       group_name = "right-center",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 5)
+  end, 400 * 5)
 
   vim.defer_fn(function()
     vim.notify("Bottom Left Corner", vim.log.levels.INFO, {
       group_name = "bottom-left",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 6)
+  end, 400 * 6)
 
   vim.defer_fn(function()
     vim.notify("Bottom Center Corner", vim.log.levels.INFO, {
       group_name = "bottom-center",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 7)
+  end, 400 * 7)
 
   vim.defer_fn(function()
     vim.notify("Bottom Right Corner", vim.log.levels.INFO, {
       group_name = "bottom-right",
-      timeout = 4000,
+      timeout = 0,
     })
-  end, 800 * 8)
+  end, 400 * 8)
 end
 
 -- Step 4: Multi-line messages
 demo_steps[4] = function()
   plugin.dismiss_all(false)
+
   local multiline_msg = table.concat({
     "Multi-line notifications work great!",
     "",
@@ -175,15 +169,17 @@ end
 
 -- Step 6: Custom icons and highlights
 demo_steps[6] = function()
+  plugin.dismiss_all(false)
+
   vim.notify("Custom icon notification", vim.log.levels.INFO, {
-    icon = "🚀",
+    icon = "󰚩 ",
     hl_group = "String",
     timeout = 3500,
   })
 
   vim.defer_fn(function()
     vim.notify("Another custom style", vim.log.levels.WARN, {
-      icon = "⭐",
+      icon = "󰓇 ",
       hl_group = "Identifier",
       timeout = 3500,
     })
@@ -191,7 +187,7 @@ demo_steps[6] = function()
 
   vim.defer_fn(function()
     vim.notify("And one more!", vim.log.levels.ERROR, {
-      icon = "💎",
+      icon = "󰙦 ",
       hl_group = "Special",
       timeout = 3500,
     })
@@ -200,23 +196,25 @@ end
 
 -- Step 7: History demonstration
 demo_steps[7] = function()
-  vim.notify("Let's create some history...", vim.log.levels.INFO)
+  plugin.dismiss_all(false)
+
+  vim.notify("Let's create some history...", vim.log.levels.INFO, { timeout = 0 })
 
   vim.defer_fn(function()
-    vim.notify("Message 1 for history", vim.log.levels.DEBUG)
+    vim.notify("Message 1 for history", vim.log.levels.DEBUG, { timeout = 0 })
   end, 500)
 
   vim.defer_fn(function()
-    vim.notify("Message 2 for history", vim.log.levels.WARN)
+    vim.notify("Message 2 for history", vim.log.levels.WARN, { timeout = 0 })
   end, 1000)
 
   vim.defer_fn(function()
-    vim.notify("Message 3 for history", vim.log.levels.ERROR)
+    vim.notify("Message 3 for history", vim.log.levels.ERROR, { timeout = 0 })
   end, 1500)
 
   vim.defer_fn(function()
     vim.notify("Use `:NotifierHistory` to view history!", vim.log.levels.INFO, {
-      timeout = 6000,
+      timeout = 0,
       hl_group = "Title",
     })
   end, 2000)
@@ -227,61 +225,58 @@ demo_steps[7] = function()
 
   vim.defer_fn(function()
     vim.cmd("close")
-  end, 4000)
+  end, 5000)
 end
 
 -- Step 8: Animation showcase with dismiss
 demo_steps[8] = function()
-  -- Create multiple notifications quickly
-  vim.notify("Notification 1", vim.log.levels.INFO, { timeout = 0 })
-  vim.notify("Notification 2", vim.log.levels.WARN, { timeout = 0 })
-  vim.notify("Notification 3", vim.log.levels.ERROR, { timeout = 0 })
-  vim.notify("Notification 4", vim.log.levels.DEBUG, { timeout = 0 })
-  vim.notify("Notification 5", vim.log.levels.TRACE, { timeout = 0 })
+  plugin.dismiss_all(false)
+
+  vim.notify("Let's create some notifications quickly...", vim.log.levels.INFO)
+
+  vim.defer_fn(function()
+    -- Create multiple notifications quickly
+    vim.notify("Notification 1", vim.log.levels.INFO, { timeout = 0 })
+    vim.notify("Notification 2", vim.log.levels.WARN, { timeout = 0 })
+    vim.notify("Notification 3", vim.log.levels.ERROR, { timeout = 0 })
+    vim.notify("Notification 4", vim.log.levels.DEBUG, { timeout = 0 })
+    vim.notify("Notification 5", vim.log.levels.TRACE, { timeout = 0 })
+  end, 1000)
 
   vim.defer_fn(function()
     vim.notify("Watch them cascade out with staggered dismissal!", vim.log.levels.INFO, {
       timeout = 4000,
       hl_group = "Title",
     })
-  end, 1000)
+  end, 2000)
 
   vim.defer_fn(function()
     -- Auto-dismiss with stagger effect
     plugin.dismiss_all({ stagger = 100 })
-  end, 4000)
+  end, 3000)
 end
 
 -- Step 9: Final showcase
 demo_steps[9] = function()
-  vim.defer_fn(function()
-    vim.notify("Demo Complete! 🎊", vim.log.levels.INFO, {
-      group_name = "center",
-      timeout = 4000,
-      _notif_formatter = welcome_formatter,
-    })
-  end, 1000)
+  local features_msg = table.concat({
+    "󰌵 notifier.nvim features:",
+    "",
+    "󰉞 Multiple positioning groups",
+    "󰏘 Custom formatters & icons",
+    "󰑓 ID-based notification updating",
+    "󰘚 Notification history viewer",
+    "󰙅 Smooth fade in/out animations",
+    "󰏥 Staggered dismiss animations",
+    "󰤄 Configurable timeouts & styling",
+    "",
+    "Ready to enhance your Neovim experience!",
+  }, "\n")
 
-  vim.defer_fn(function()
-    local features_msg = table.concat({
-      "✨ notifier.nvim features:",
-      "",
-      "🎯 Multiple positioning groups",
-      "🎨 Custom formatters & icons",
-      "🔄 ID-based notification updating",
-      "📚 Notification history viewer",
-      "🌊 Smooth fade in/out animations",
-      "⚡ Staggered dismiss animations",
-      "🎛️ Configurable timeouts & styling",
-      "",
-      "Ready to enhance your Neovim experience!",
-    }, "\n")
-
-    vim.notify(features_msg, vim.log.levels.INFO, {
-      group_name = "center",
-      timeout = 8000,
-    })
-  end, 2000)
+  vim.notify(features_msg, vim.log.levels.INFO, {
+    group_name = "center",
+    icon = "",
+    timeout = 8000,
+  })
 end
 
 -- Main demo function
@@ -291,8 +286,9 @@ function M.run_demo()
 
   -- Create intro message
   vim.defer_fn(function()
-    vim.notify("🎬 Starting notifier.nvim demo in 3...", vim.log.levels.INFO, {
+    vim.notify("Starting notifier.nvim demo in 3...", vim.log.levels.INFO, {
       id = "welcome",
+      icon = "",
       group_name = "center",
       timeout = 2000,
       hl_group = "Title",
@@ -300,8 +296,9 @@ function M.run_demo()
   end, 0)
 
   vim.defer_fn(function()
-    vim.notify("🎬 Starting notifier.nvim demo in 2...", vim.log.levels.INFO, {
+    vim.notify("Starting notifier.nvim demo in 2...", vim.log.levels.INFO, {
       id = "welcome",
+      icon = "",
       group_name = "center",
       timeout = 2000,
       hl_group = "Title",
@@ -309,8 +306,9 @@ function M.run_demo()
   end, 1000)
 
   vim.defer_fn(function()
-    vim.notify("🎬 Starting notifier.nvim demo in 1...", vim.log.levels.INFO, {
+    vim.notify("Starting notifier.nvim demo in 1...", vim.log.levels.INFO, {
       id = "welcome",
+      icon = "",
       group_name = "center",
       timeout = 2000,
       hl_group = "Title",
@@ -320,14 +318,14 @@ function M.run_demo()
   -- Run demo steps with timing
   local step_timings = {
     3000, -- Welcome
-    6000, -- Log levels
-    12000, -- Multiple groups
-    19000, -- Multi-line
-    21000, -- Progress updates
-    27000, -- Custom styling
-    33000, -- History
-    37000, -- Animation showcase
-    41000, -- Final
+    4000, -- Log levels
+    9000, -- Multiple groups
+    13000, -- Multi-line
+    15000, -- Progress updates
+    20000, -- Custom styling
+    24000, -- History
+    30000, -- Animation showcase
+    35000, -- Final
   }
 
   for i, step_fn in ipairs(demo_steps) do
