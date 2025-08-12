@@ -228,8 +228,8 @@ vim.notify("Download complete!", vim.log.levels.INFO, {
   id = "download-progress"
 })
 
--- Inline formatter with custom data - no message needed!
-vim.notify("", vim.log.levels.INFO, {
+-- Inline formatter with custom data
+vim.notify("🖥️  Server", vim.log.levels.INFO, {
   id = "server-status",
   _notif_formatter = function(opts)
     local data = opts.notif._notif_formatter_data
@@ -238,7 +238,7 @@ vim.notify("", vim.log.levels.INFO, {
     local status_color = data.online and "String" or "ErrorMsg"
 
     return {
-      { display_text = "🖥️  Server ", hl_group = "NotifierInfo", is_virtual = true },
+      { display_text = opts.line, hl_group = "NotifierInfo", is_virtual = true },
       { display_text = data.name, hl_group = "Identifier", is_virtual = true },
       { display_text = " " .. status_icon .. " ", hl_group = status_color, is_virtual = true },
       { display_text = status_text, hl_group = status_color, is_virtual = true },
