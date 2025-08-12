@@ -67,10 +67,17 @@ Default values:
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
   default_group = "bottom-right",
   group_configs = {
-    ["bottom-right"] = {
-      anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
+    ["top-left"] = {
+      anchor = "NW",
+      row = 0,
+      col = 0,
+      winblend = 0,
+    },
+    ["top-center"] = {
+      anchor = "NW",
+      row = 1,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
       winblend = 0,
     },
     ["top-right"] = {
@@ -79,16 +86,44 @@ Default values:
       col = vim.o.columns,
       winblend = 0,
     },
-    ["top-left"] = {
+    ["left-center"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = vim.o.lines / 2,
+      col = 1,
+      center_mode = "vertical", -- Center vertically only
+      winblend = 0,
+    },
+    ["center"] = {
+      anchor = "NW",
+      row = vim.o.lines / 2,
+      col = vim.o.columns / 2,
+      center_mode = "true", -- Center both horizontally and vertically
+      winblend = 0,
+    },
+    ["right-center"] = {
+      anchor = "NE",
+      row = vim.o.lines / 2,
+      col = vim.o.columns - 1,
+      center_mode = "vertical", -- Center vertically only
       winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
+      winblend = 0,
+    },
+    ["bottom-center"] = {
+      anchor = "SW",
+      row = vim.o.lines - 2,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
+      winblend = 0,
+    },
+    ["bottom-right"] = {
+      anchor = "SE",
+      row = vim.o.lines - 2,
+      col = vim.o.columns,
       winblend = 0,
     },
   },
@@ -220,16 +255,22 @@ Notifier.GroupConfigsKey              *notifier.public.Notifier.GroupConfigsKey*
         ("top-right")
         ("top-left")
         ("bottom-left")
+        ("center")
+        ("top-center")
+        ("bottom-center")
+        ("left-center")
+        ("right-center")
 
 
 Notifier.GroupConfigs                    *notifier.public.Notifier.GroupConfigs*
     Group positioning and display configuration.
 
     Fields: ~
-        {anchor}     ("NW"|"NE"|"SW"|"SE")  Window anchor point for positioning
-        {row}        (integer)              Row position relative to the editor
-        {col}        (integer)              Column position relative to the editor
-        {winblend?}  (integer)              Window transparency (0-100, default: 0)
+        {anchor}        ("NW"|"NE"|"SW"|"SE")             Window anchor point for positioning
+        {row}           (integer)                         Row position relative to the editor
+        {col}           (integer)                         Column position relative to the editor
+        {winblend?}     (integer)                         Window transparency (0-100, default: 0)
+        {center_mode?}  ("true"|"horizontal"|"vertical")  Enable center positioning calculations
 
 
 Notifier.Config.Padding                *notifier.public.Notifier.Config.Padding*
