@@ -76,11 +76,18 @@ require("notifier").setup({
 
   -- Group positioning configurations
   group_configs = {
-    ["bottom-right"] = {
-      anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
-      winblend = 0, -- 0-100 transparency
+    ["top-left"] = {
+      anchor = "NW",
+      row = 0,
+      col = 0,
+      winblend = 0,
+    },
+    ["top-center"] = {
+      anchor = "NW",
+      row = 1,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
+      winblend = 0,
     },
     ["top-right"] = {
       anchor = "NE",
@@ -88,16 +95,44 @@ require("notifier").setup({
       col = vim.o.columns,
       winblend = 0,
     },
-    ["top-left"] = {
+    ["left-center"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = vim.o.lines / 2,
+      col = 1,
+      center_mode = "vertical", -- Center vertically only
+      winblend = 0,
+    },
+    ["center"] = {
+      anchor = "NW",
+      row = vim.o.lines / 2,
+      col = vim.o.columns / 2,
+      center_mode = "true", -- Center both horizontally and vertically
+      winblend = 0,
+    },
+    ["right-center"] = {
+      anchor = "NE",
+      row = vim.o.lines / 2,
+      col = vim.o.columns - 1,
+      center_mode = "vertical", -- Center vertically only
       winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
+      winblend = 0,
+    },
+    ["bottom-center"] = {
+      anchor = "SW",
+      row = vim.o.lines - 2,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
+      winblend = 0,
+    },
+    ["bottom-right"] = {
+      anchor = "SE",
+      row = vim.o.lines - 2,
+      col = vim.o.columns,
       winblend = 0,
     },
   },

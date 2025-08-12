@@ -65,10 +65,17 @@
 ---  padding = { top = 0, right = 0, bottom = 0, left = 0 },
 ---  default_group = "bottom-right",
 ---  group_configs = {
----    ["bottom-right"] = {
----      anchor = "SE",
----      row = vim.o.lines - 2,
----      col = vim.o.columns,
+---    ["top-left"] = {
+---      anchor = "NW",
+---      row = 0,
+---      col = 0,
+---      winblend = 0,
+---    },
+---    ["top-center"] = {
+---      anchor = "NW",
+---      row = 1,
+---      col = vim.o.columns / 2,
+---      center_mode = "horizontal", -- Center horizontally only
 ---      winblend = 0,
 ---    },
 ---    ["top-right"] = {
@@ -77,16 +84,44 @@
 ---      col = vim.o.columns,
 ---      winblend = 0,
 ---    },
----    ["top-left"] = {
+---    ["left-center"] = {
 ---      anchor = "NW",
----      row = 0,
----      col = 0,
+---      row = vim.o.lines / 2,
+---      col = 1,
+---      center_mode = "vertical", -- Center vertically only
+---      winblend = 0,
+---    },
+---    ["center"] = {
+---      anchor = "NW",
+---      row = vim.o.lines / 2,
+---      col = vim.o.columns / 2,
+---      center_mode = "true", -- Center both horizontally and vertically
+---      winblend = 0,
+---    },
+---    ["right-center"] = {
+---      anchor = "NE",
+---      row = vim.o.lines / 2,
+---      col = vim.o.columns - 1,
+---      center_mode = "vertical", -- Center vertically only
 ---      winblend = 0,
 ---    },
 ---    ["bottom-left"] = {
 ---      anchor = "SW",
 ---      row = vim.o.lines - 2,
 ---      col = 0,
+---      winblend = 0,
+---    },
+---    ["bottom-center"] = {
+---      anchor = "SW",
+---      row = vim.o.lines - 2,
+---      col = vim.o.columns / 2,
+---      center_mode = "horizontal", -- Center horizontally only
+---      winblend = 0,
+---    },
+---    ["bottom-right"] = {
+---      anchor = "SE",
+---      row = vim.o.lines - 2,
+---      col = vim.o.columns,
 ---      winblend = 0,
 ---    },
 ---  },
@@ -241,6 +276,11 @@ local setup_complete = false
 ---| '"top-right"'
 ---| '"top-left"'
 ---| '"bottom-left"'
+---| '"center"'
+---| '"top-center"'
+---| '"bottom-center"'
+---| '"left-center"'
+---| '"right-center"'
 
 ---Group positioning and display configuration.
 ---@class Notifier.GroupConfigs
@@ -248,6 +288,7 @@ local setup_complete = false
 ---@field row integer Row position relative to the editor
 ---@field col integer Column position relative to the editor
 ---@field winblend? integer Window transparency (0-100, default: 0)
+---@field center_mode? '"true"'|'"horizontal"'|'"vertical"' Enable center positioning calculations
 
 ---Padding configuration for notification windows.
 ---@class Notifier.Config.Padding
@@ -356,10 +397,17 @@ local DEFAULT_CONFIG = {
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
   default_group = "bottom-right",
   group_configs = {
-    ["bottom-right"] = {
-      anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
+    ["top-left"] = {
+      anchor = "NW",
+      row = 0,
+      col = 0,
+      winblend = 0,
+    },
+    ["top-center"] = {
+      anchor = "NW",
+      row = 1,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
       winblend = 0,
     },
     ["top-right"] = {
@@ -368,16 +416,44 @@ local DEFAULT_CONFIG = {
       col = vim.o.columns,
       winblend = 0,
     },
-    ["top-left"] = {
+    ["left-center"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = vim.o.lines / 2,
+      col = 1,
+      center_mode = "vertical", -- Center vertically only
+      winblend = 0,
+    },
+    ["center"] = {
+      anchor = "NW",
+      row = vim.o.lines / 2,
+      col = vim.o.columns / 2,
+      center_mode = "true", -- Center both horizontally and vertically
+      winblend = 0,
+    },
+    ["right-center"] = {
+      anchor = "NE",
+      row = vim.o.lines / 2,
+      col = vim.o.columns - 1,
+      center_mode = "vertical", -- Center vertically only
       winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
+      winblend = 0,
+    },
+    ["bottom-center"] = {
+      anchor = "SW",
+      row = vim.o.lines - 2,
+      col = vim.o.columns / 2,
+      center_mode = "horizontal", -- Center horizontally only
+      winblend = 0,
+    },
+    ["bottom-right"] = {
+      anchor = "SE",
+      row = vim.o.lines - 2,
+      col = vim.o.columns,
       winblend = 0,
     },
   },
@@ -426,13 +502,20 @@ local function validate_config(config)
 
   -- Validate group configs
   if config.group_configs then
-    local valid_anchors = { NW = true, NE = true, SW = true, SE = true }
+    local valid_anchors = { NW = true, NE = true, SW = true, SE = true } -- Only corner anchors
+    local valid_center_modes = { ["true"] = true, horizontal = true, vertical = true }
+
     for group_name, group_config in pairs(config.group_configs) do
       if type(group_name) ~= "string" then
         return false, "group config keys must be strings"
       end
       if not valid_anchors[group_config.anchor] then
-        return false, string.format("invalid anchor '%s' for group '%s'", tostring(group_config.anchor), group_name)
+        return false,
+          string.format(
+            "invalid anchor '%s' for group '%s' (only NW, NE, SW, SE supported)",
+            tostring(group_config.anchor),
+            group_name
+          )
       end
       if type(group_config.row) ~= "number" or group_config.row < 0 then
         return false, string.format("row must be non-negative number for group '%s'", group_name)
@@ -445,6 +528,10 @@ local function validate_config(config)
         and (type(group_config.winblend) ~= "number" or group_config.winblend < 0 or group_config.winblend > 100)
       then
         return false, string.format("winblend must be 0-100 for group '%s'", group_name)
+      end
+      if group_config.center_mode and not valid_center_modes[group_config.center_mode] then
+        return false,
+          string.format("invalid center_mode '%s' for group '%s'", tostring(group_config.center_mode), group_name)
       end
     end
   end
@@ -864,29 +951,25 @@ function GroupManager.get_group(name)
 
   -- Create new buffer and window
   local buf = vim.api.nvim_create_buf(false, true)
-  local win = vim.api.nvim_open_win(buf, false, {
+
+  -- Get group configuration
+  local group_config = M.config.group_configs[name] or M.config.group_configs[M.config.default_group]
+
+  -- Create window with valid anchor (position will be calculated in render_group)
+  local initial_config = {
     relative = "editor",
     width = 1,
     height = 1,
     focusable = false,
     style = "minimal",
     border = M.config.border,
-    row = 0,
-    col = 0,
-    anchor = "NW",
-    zindex = 200,
-  })
-
-  -- Apply group-specific configuration
-  local group_config = M.config.group_configs[name] or M.config.group_configs[M.config.default_group]
-  vim.api.nvim_win_set_config(win, {
-    relative = "editor",
     row = group_config.row,
     col = group_config.col,
-    anchor = group_config.anchor,
-    width = 1,
-    height = 1,
-  })
+    anchor = group_config.anchor, -- Always a valid corner anchor
+    zindex = 200,
+  }
+
+  local win = vim.api.nvim_open_win(buf, false, initial_config)
 
   -- Set window appearance
   vim.wo[win].winblend = group_config.winblend or 0
@@ -1342,12 +1425,50 @@ function UI.render_group(group)
   width = math.min(width, math.floor(vim.o.columns * 0.6))
   local height = #lines
 
+  -- Calculate position based on center_mode
+  local row, col, anchor = group.config.row, group.config.col, group.config.anchor
+
+  if group.config.center_mode then
+    if group.config.center_mode == "true" then
+      -- Center both horizontally and vertically
+      row = math.max(0, group.config.row - math.floor(height / 2))
+      col = math.max(0, group.config.col - math.floor(width / 2))
+      anchor = "NW" -- Always use NW when centering both dimensions
+    elseif group.config.center_mode == "horizontal" then
+      -- Center horizontally only
+      col = math.max(0, group.config.col - math.floor(width / 2))
+      -- Keep the original anchor for vertical positioning
+      if anchor == "SW" or anchor == "SE" then
+        -- For bottom anchors, keep the row as-is
+        row = group.config.row
+      else
+        -- For top anchors, keep the row as-is
+        row = group.config.row
+      end
+      -- Convert to NW/SW for horizontal centering
+      anchor = (anchor == "SW" or anchor == "SE") and "SW" or "NW"
+    elseif group.config.center_mode == "vertical" then
+      -- Center vertically only
+      row = math.max(0, group.config.row - math.floor(height / 2))
+      -- Keep the original anchor for horizontal positioning
+      if anchor == "NE" or anchor == "SE" then
+        -- For right anchors, keep the col as-is
+        col = group.config.col
+      else
+        -- For left anchors, keep the col as-is
+        col = group.config.col
+      end
+      -- Convert to NW/NE for vertical centering
+      anchor = (anchor == "NE" or anchor == "SE") and "NE" or "NW"
+    end
+  end
+
   -- Resize window
   local ok_win, _ = pcall(vim.api.nvim_win_set_config, group.win, {
     relative = "editor",
-    row = group.config.row,
-    col = group.config.col,
-    anchor = group.config.anchor,
+    row = row,
+    col = col,
+    anchor = anchor,
     width = width,
     height = height,
   })
@@ -1889,11 +2010,31 @@ local function setup_autocmds()
       -- Update group configs to new screen dimensions
       if M.config and M.config.group_configs then
         for _, group_config in pairs(M.config.group_configs) do
+          -- Update standard edge positions
           if group_config.anchor:find("E") then
             group_config.col = vim.o.columns
           end
           if group_config.anchor:find("S") then
             group_config.row = vim.o.lines - 2
+          end
+
+          -- Update center positions based on center_mode
+          if group_config.center_mode then
+            if group_config.center_mode == "true" then
+              -- True center
+              group_config.row = vim.o.lines / 2
+              group_config.col = vim.o.columns / 2
+            elseif group_config.center_mode == "horizontal" then
+              -- Horizontal center only
+              group_config.col = vim.o.columns / 2
+            elseif group_config.center_mode == "vertical" then
+              -- Vertical center only
+              group_config.row = vim.o.lines / 2
+              -- Update right edge if needed
+              if group_config.anchor:find("E") then
+                group_config.col = vim.o.columns - 1
+              end
+            end
           end
         end
       end
