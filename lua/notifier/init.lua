@@ -940,7 +940,12 @@ local animation_timer = nil
 ---@param notification Notifier.Notification
 ---@param duration? number Animation duration in ms (default: 300)
 function AnimationManager.start_fade_out(notification, duration)
-  duration = duration or 300
+  if not M.config.animation.enabled then
+    notification._expired = true
+    return
+  end
+
+  duration = duration or M.config.animation.fade_out_duration or 300
   local animation_id = notification.id or tostring(notification)
 
   active_animations[animation_id] = {
@@ -1594,6 +1599,7 @@ local function start_cleanup_timer()
     vim.schedule_wrap(function()
       local now = os.time() * 1000
       for _, group in pairs(State.groups) do
+        local changed = false
         for i = #group.notifications, 1, -1 do
           local notif = group.notifications[i]
           if notif._expired or notif._animating then
@@ -1602,10 +1608,17 @@ local function start_cleanup_timer()
 
           local elapsed_ms = (now - ((notif.updated_at or notif.created_at) * 1000))
           if notif.timeout > 0 and elapsed_ms >= notif.timeout then
-            -- Start fade out animation instead of immediate expiration
-            AnimationManager.start_fade_out(notif, 300)
+            if M.config.animation.enabled then
+              AnimationManager.start_fade_out(notif)
+            else
+              notif._expired = true
+              changed = true
+            end
           end
           ::continue::
+        end
+        if changed then
+          UI.debounce_render()
         end
       end
     end)
