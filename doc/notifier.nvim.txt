@@ -169,12 +169,14 @@ and enhanced formatting.
 <
 
                                                               *:NotifierDismiss*
-# Dismiss all notifications ~
+# Dismiss all active notifications immediately or with animation ~
 
-Immediately close all active notification windows.
+Immediately close all active notification windows or animate them out.
 
 >vim
    :NotifierDismiss    " Dismiss all notifications
+   :NotifierDismiss stagger=50 animated    " Dismiss all notifications with stagger and animation
+   :NotifierDismiss immediate    " Dismiss all notifications immediately
 <
 
 ==============================================================================
@@ -359,8 +361,11 @@ M.show_history()                                  *notifier.public.show_history*
 
 
                                                         *notifier.dismiss_all()*
-M.dismiss_all()                                    *notifier.public.dismiss_all*
+M.dismiss_all({opts?})                             *notifier.public.dismiss_all*
     Dismiss all active notifications immediately
+
+    Parameters: ~
+        {opts?}  (boolean|{animated?:boolean,stagger?:number})  Options for dismissal
 
     Returns: ~
         (nil)
