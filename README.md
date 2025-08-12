@@ -63,6 +63,9 @@ require("notifier").setup({
   -- Border style for floating windows
   border = "none", -- "none", "single", "double", "rounded", "solid", "shadow"
 
+  -- Winblend for floating windows
+  winblend = 0, -- 0-100 transparency
+
   -- Padding around notification content
   padding = {
     top = 0,
@@ -80,60 +83,52 @@ require("notifier").setup({
       anchor = "NW",
       row = 0,
       col = 0,
-      winblend = 0,
+      winblend = 0, -- overrides global winblend
     },
     ["top-center"] = {
       anchor = "NW",
       row = 1,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["top-right"] = {
       anchor = "NE",
       row = 0,
       col = vim.o.columns,
-      winblend = 0,
     },
     ["left-center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = vim.o.columns / 2,
       center_mode = "true", -- Center both horizontally and vertically
-      winblend = 0,
     },
     ["right-center"] = {
       anchor = "NE",
       row = vim.o.lines / 2,
       col = vim.o.columns - 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
-      winblend = 0,
     },
     ["bottom-center"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["bottom-right"] = {
       anchor = "SE",
       row = vim.o.lines - 2,
       col = vim.o.columns,
-      winblend = 0,
     },
   },
 

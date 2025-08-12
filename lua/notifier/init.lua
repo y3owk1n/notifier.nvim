@@ -62,6 +62,7 @@
 ---{
 ---  default_timeout = 3000,
 ---  border = "none",
+---  winblend = 0,
 ---  padding = { top = 0, right = 0, bottom = 0, left = 0 },
 ---  default_group = "bottom-right",
 ---  group_configs = {
@@ -69,60 +70,51 @@
 ---      anchor = "NW",
 ---      row = 0,
 ---      col = 0,
----      winblend = 0,
 ---    },
 ---    ["top-center"] = {
 ---      anchor = "NW",
 ---      row = 1,
 ---      col = vim.o.columns / 2,
 ---      center_mode = "horizontal", -- Center horizontally only
----      winblend = 0,
 ---    },
 ---    ["top-right"] = {
 ---      anchor = "NE",
 ---      row = 0,
 ---      col = vim.o.columns,
----      winblend = 0,
 ---    },
 ---    ["left-center"] = {
 ---      anchor = "NW",
 ---      row = vim.o.lines / 2,
 ---      col = 1,
 ---      center_mode = "vertical", -- Center vertically only
----      winblend = 0,
 ---    },
 ---    ["center"] = {
 ---      anchor = "NW",
 ---      row = vim.o.lines / 2,
 ---      col = vim.o.columns / 2,
 ---      center_mode = "true", -- Center both horizontally and vertically
----      winblend = 0,
 ---    },
 ---    ["right-center"] = {
 ---      anchor = "NE",
 ---      row = vim.o.lines / 2,
 ---      col = vim.o.columns - 1,
 ---      center_mode = "vertical", -- Center vertically only
----      winblend = 0,
 ---    },
 ---    ["bottom-left"] = {
 ---      anchor = "SW",
 ---      row = vim.o.lines - 2,
 ---      col = 0,
----      winblend = 0,
 ---    },
 ---    ["bottom-center"] = {
 ---      anchor = "SW",
 ---      row = vim.o.lines - 2,
 ---      col = vim.o.columns / 2,
 ---      center_mode = "horizontal", -- Center horizontally only
----      winblend = 0,
 ---    },
 ---    ["bottom-right"] = {
 ---      anchor = "SE",
 ---      row = vim.o.lines - 2,
 ---      col = vim.o.columns,
----      winblend = 0,
 ---    },
 ---  },
 ---  icons = {
@@ -328,6 +320,7 @@ local setup_complete = false
 ---@class Notifier.Config
 ---@field default_timeout? integer Default timeout in milliseconds (default: 3000)
 ---@field border? string Border style for floating windows (default: "none")
+---@field winblend? integer Window transparency (0-100, default: 0)
 ---@field icons? table<integer, string> Icons for each log level (keys are vim.log.levels values)
 ---@field notif_formatter? fun(opts: Notifier.NotificationFormatterOpts): Notifier.FormattedNotifOpts[] Function to format live notifications
 ---@field notif_history_formatter? fun(opts: Notifier.NotificationFormatterOpts): Notifier.FormattedNotifOpts[] Function to format notifications in history view
@@ -394,6 +387,7 @@ end
 local DEFAULT_CONFIG = {
   default_timeout = 3000,
   border = "none",
+  winblend = 0,
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
   default_group = "bottom-right",
   group_configs = {
@@ -401,60 +395,51 @@ local DEFAULT_CONFIG = {
       anchor = "NW",
       row = 0,
       col = 0,
-      winblend = 0,
     },
     ["top-center"] = {
       anchor = "NW",
       row = 1,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["top-right"] = {
       anchor = "NE",
       row = 0,
       col = vim.o.columns,
-      winblend = 0,
     },
     ["left-center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = vim.o.columns / 2,
       center_mode = "true", -- Center both horizontally and vertically
-      winblend = 0,
     },
     ["right-center"] = {
       anchor = "NE",
       row = vim.o.lines / 2,
       col = vim.o.columns - 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
-      winblend = 0,
     },
     ["bottom-center"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["bottom-right"] = {
       anchor = "SE",
       row = vim.o.lines - 2,
       col = vim.o.columns,
-      winblend = 0,
     },
   },
   icons = {
@@ -481,6 +466,11 @@ local function validate_config(config)
   -- Validate timeout
   if config.default_timeout and (type(config.default_timeout) ~= "number" or config.default_timeout < 0) then
     return false, "default_timeout must be a positive number"
+  end
+
+  -- Validate global winblend
+  if config.winblend and (type(config.winblend) ~= "number" or config.winblend < 0 or config.winblend > 100) then
+    return false, "winblend must be a number between 0 and 100"
   end
 
   -- Validate padding
@@ -972,7 +962,11 @@ function GroupManager.get_group(name)
   local win = vim.api.nvim_open_win(buf, false, initial_config)
 
   -- Set window appearance
-  vim.wo[win].winblend = group_config.winblend or 0
+  local effective_winblend = group_config.winblend
+  if effective_winblend == nil then
+    effective_winblend = M.config.winblend or 0
+  end
+  vim.wo[win].winblend = effective_winblend
   vim.wo[win].winhighlight = string.format("NormalFloat:%s,FloatBorder:%s", "NotifierNormal", "NotifierBorder")
 
   -- Store group state
