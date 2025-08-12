@@ -898,23 +898,6 @@ function Utils.get_notification_window_bg_color()
   end
 end
 
----Debug function to check what colors are being used
----@return table Debug information about colors
-function Utils.debug_fade_colors()
-  local bg_color = Utils.get_notification_window_bg_color()
-  local notifier_hl = Utils.resolve_highlight_group("NotifierNormal")
-  local normal_float_hl = Utils.resolve_highlight_group("NormalFloat")
-  local normal_hl = Utils.resolve_highlight_group("Normal")
-
-  return {
-    background_color = string.format("#%06x", bg_color),
-    notifier_normal = notifier_hl,
-    normal_float = normal_float_hl,
-    normal = normal_hl,
-    vim_background = vim.o.background,
-  }
-end
-
 -- ============================================================================
 -- GROUP MANAGEMENT
 -- ============================================================================
