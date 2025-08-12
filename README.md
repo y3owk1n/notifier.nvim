@@ -118,6 +118,7 @@ require("notifier").setup({
   -- Animation
   animation = {
     enabled = false, -- animation is off by default
+    fade_in_duration = 300,
     fade_out_duration = 300,
   },
 })

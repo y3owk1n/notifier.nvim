@@ -101,6 +101,7 @@
 ---  notif_history_formatter = U.default_notif_history_formatter,
 ---  animation = {
 ---    enabled = false,
+---    fade_in_duration = 300,
 ---    fade_out_duration = 300,
 ---  },
 ---}
@@ -295,6 +296,7 @@ local setup_complete = false
 ---Animation configuration.
 ---@class Notifier.Config.Animation
 ---@field enabled? boolean Whether animations are enabled (default: false)
+---@field fade_in_duration? integer Duration of fade in animations in milliseconds (default: 300)
 ---@field fade_out_duration? integer Duration of fade out animations in milliseconds (default: 300)
 
 -- ============================================================================
@@ -388,6 +390,7 @@ local DEFAULT_CONFIG = {
   notif_history_formatter = nil, -- Set below
   animation = {
     enabled = false,
+    fade_in_duration = 300,
     fade_out_duration = 300,
   },
 }
@@ -936,6 +939,35 @@ local active_animations = {}
 ---@type uv.uv_timer_t?
 local animation_timer = nil
 
+---Start fade in animation for a notification
+---@param notification Notifier.Notification
+---@param duration? number Animation duration in ms (default: 200)
+function AnimationManager.start_fade_in(notification, duration)
+  -- Safety check - don't animate if disabled
+  if not M.config.animation.enabled then
+    notification._animation_alpha = 1.0
+    return
+  end
+
+  duration = duration or M.config.animation.fade_in_duration or 200
+  local animation_id = notification.id or tostring(notification)
+
+  active_animations[animation_id] = {
+    notification = notification,
+    start_time = uv.hrtime() / 1e6, -- Convert to milliseconds
+    duration = duration,
+    type = "fade_in",
+    progress = 0,
+    completed = false,
+  }
+
+  -- Mark notification as animating and start fully transparent
+  notification._animating = true
+  notification._animation_alpha = 0.0
+
+  AnimationManager.start_animation_loop()
+end
+
 ---Start fade out animation for a notification
 ---@param notification Notifier.Notification
 ---@param duration? number Animation duration in ms (default: 300)
@@ -1005,6 +1037,16 @@ function AnimationManager.update_animations()
           anim.notification._expired = true
           anim.notification._animating = false
           anim.notification._animation_alpha = 0
+        end
+      elseif anim.type == "fade_in" then
+        -- Smooth fade in using easing
+        local alpha = AnimationManager.ease_out_cubic(anim.progress)
+        anim.notification._animation_alpha = alpha
+
+        if anim.progress >= 1.0 then
+          anim.completed = true
+          anim.notification._animating = false
+          anim.notification._animation_alpha = 1.0
         end
       end
 
@@ -1549,14 +1591,16 @@ function NotificationManager.notify(msg, level, opts)
         notif._notif_formatter = _notif_formatter
         notif._notif_formatter_data = _notif_formatter_data
         notif._expired = false
+
+        -- Always render immediately regardless of animation setting
+        -- We don't want to animate the notification if it's updating the existing one
         UI.debounce_render()
         return
       end
     end
   end
 
-  -- Add new notification
-  table.insert(group.notifications, {
+  local new_notif = {
     id = id,
     msg = msg,
     icon = icon,
@@ -1568,9 +1612,16 @@ function NotificationManager.notify(msg, level, opts)
     _expired = false,
     _notif_formatter = _notif_formatter,
     _notif_formatter_data = _notif_formatter_data,
-  })
+  }
 
-  UI.debounce_render()
+  -- Add new notification
+  table.insert(group.notifications, new_notif)
+
+  if M.config.animation.enabled then
+    AnimationManager.start_fade_in(new_notif, M.config.animation.fade_in_duration)
+  else
+    UI.debounce_render()
+  end
 end
 
 -- ============================================================================
