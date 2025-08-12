@@ -5,7 +5,7 @@ A modern, feature-rich notification system for Neovim that transforms the standa
 ![Neovim](https://img.shields.io/badge/Neovim-0.10+-green.svg?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
 
-<https://github.com/user-attachments/assets/0291d062-9fd3-4d2b-87d9-0d9967e8c267>
+<https://github.com/user-attachments/assets/33563df9-f7d2-45de-8b78-c004b0ef2a36>
 
 ## ✨ Features
 
