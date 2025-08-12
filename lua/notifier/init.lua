@@ -1781,7 +1781,7 @@ function NotificationManager.notify(msg, level, opts)
   local _notif_formatter_data = type(opts._notif_formatter_data) == "table" and opts._notif_formatter_data or nil
 
   level = Validator.validate_level(level)
-  msg = Validator.validate_msg(found_notif.msg or msg)
+  msg = Validator.validate_msg(msg ~= "" and msg or found_notif.msg)
 
   -- Replace existing notification with same ID
   if id then
