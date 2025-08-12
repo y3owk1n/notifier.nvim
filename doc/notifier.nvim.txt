@@ -103,6 +103,7 @@ Default values:
   notif_history_formatter = U.default_notif_history_formatter,
   animation = {
     enabled = false,
+    fade_in_duration = 300,
     fade_out_duration = 300,
   },
 }
@@ -306,6 +307,7 @@ Notifier.Config.Animation
 
     Fields: ~
         {enabled?}            (boolean)  Whether animations are enabled (default: false)
+        {fade_in_duration?}   (integer)  Duration of fade in animations in milliseconds (default: 300)
         {fade_out_duration?}  (integer)  Duration of fade out animations in milliseconds (default: 300)
 
 
