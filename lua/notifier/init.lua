@@ -172,12 +172,14 @@
 ---@tag :NotifierDismiss
 
 ---@brief [[
----# Dismiss all notifications ~
+---# Dismiss all active notifications immediately or with animation ~
 ---
----Immediately close all active notification windows.
+---Immediately close all active notification windows or animate them out.
 ---
 --->vim
 ---   :NotifierDismiss    " Dismiss all notifications
+---   :NotifierDismiss stagger=50 animated    " Dismiss all notifications with stagger and animation
+---   :NotifierDismiss immediate    " Dismiss all notifications immediately
 ---<
 ---@brief ]]
 
@@ -1098,6 +1100,46 @@ function AnimationManager.stop_animation_loop()
   end
 end
 
+-- Add a batch animation method to AnimationManager for better performance
+---Start fade out animations for multiple notifications
+---@param notifications Notifier.Notification[] Array of notifications to animate
+---@param duration? number Animation duration in ms
+---@param stagger_delay? number Optional delay between starting each animation (ms)
+function AnimationManager.start_batch_fade_out(notifications, duration, stagger_delay)
+  if not M.config.animation.enabled then
+    -- Mark all as expired immediately
+    for _, notif in ipairs(notifications) do
+      notif._expired = true
+    end
+    return
+  end
+
+  duration = duration or M.config.animation.fade_out_duration or 300
+  stagger_delay = stagger_delay or 0
+
+  -- Start animations with optional staggering
+  for i, notification in ipairs(notifications) do
+    if stagger_delay > 0 then
+      -- Use a timer for staggered start
+      local delay_timer = uv.new_timer()
+      if delay_timer then
+        local start_delay = (i - 1) * stagger_delay
+        delay_timer:start(
+          start_delay,
+          0,
+          vim.schedule_wrap(function()
+            AnimationManager.start_fade_out(notification, duration)
+            delay_timer:close()
+          end)
+        )
+      end
+    else
+      -- Start immediately
+      AnimationManager.start_fade_out(notification, duration)
+    end
+  end
+end
+
 -- ============================================================================
 -- FORMATTERS
 -- ============================================================================
@@ -1432,18 +1474,85 @@ function UI.show_history()
   vim.api.nvim_set_current_win(win)
 end
 
----Dismiss all active notifications immediately
-function UI.dismiss_all()
-  for _, group in pairs(State.groups) do
-    if vim.api.nvim_win_is_valid(group.win) then
-      vim.api.nvim_win_close(group.win, true)
+---Dismiss all active notifications immediately or with animation
+---@param opts? boolean|{ animated?: boolean, stagger?: number } Options for dismissal
+function UI.dismiss_all(opts)
+  if type(opts) == "boolean" then
+    opts = { animated = opts }
+  end
+
+  opts = opts or {}
+  local animated = opts.animated
+  local stagger_delay = opts.stagger or 0
+
+  -- Default to config setting if not specified
+  if animated == nil then
+    animated = M.config.animation.enabled
+  end
+
+  if not animated then
+    -- Immediate dismissal
+    for _, group in pairs(State.groups) do
+      if vim.api.nvim_win_is_valid(group.win) then
+        vim.api.nvim_win_close(group.win, true)
+      end
+      if vim.api.nvim_buf_is_valid(group.buf) then
+        vim.api.nvim_buf_delete(group.buf, { force = true })
+      end
     end
-    if vim.api.nvim_buf_is_valid(group.buf) then
-      vim.api.nvim_buf_delete(group.buf, { force = true })
+    ---@diagnostic disable-next-line: missing-fields
+    State.groups = {}
+    return
+  end
+
+  -- Animated dismissal
+  local notifications_to_animate = {}
+
+  -- Collect all active notifications
+  for _, group in pairs(State.groups) do
+    for _, notif in ipairs(group.notifications) do
+      if not notif._expired and not notif._animating then
+        table.insert(notifications_to_animate, notif)
+      end
     end
   end
-  ---@diagnostic disable-next-line: missing-fields
-  State.groups = {}
+
+  -- If no notifications to animate, just return
+  if #notifications_to_animate == 0 then
+    return
+  end
+
+  -- Start animations with optional staggering
+  AnimationManager.start_batch_fade_out(notifications_to_animate, M.config.animation.fade_out_duration, stagger_delay)
+
+  -- Set up delayed cleanup
+  local total_animation_time = (M.config.animation.fade_out_duration or 300)
+  if stagger_delay > 0 then
+    total_animation_time = total_animation_time + (stagger_delay * #notifications_to_animate)
+  end
+
+  local cleanup_timer = uv.new_timer()
+  if cleanup_timer then
+    cleanup_timer:start(
+      total_animation_time + 100,
+      0,
+      vim.schedule_wrap(function()
+        -- Clean up any remaining windows and buffers
+        for _, group in pairs(State.groups) do
+          if vim.api.nvim_win_is_valid(group.win) then
+            vim.api.nvim_win_close(group.win, true)
+          end
+          if vim.api.nvim_buf_is_valid(group.buf) then
+            vim.api.nvim_buf_delete(group.buf, { force = true })
+          end
+        end
+        ---@diagnostic disable-next-line: missing-fields
+        State.groups = {}
+
+        cleanup_timer:close()
+      end)
+    )
+  end
 end
 
 -- ============================================================================
@@ -1701,10 +1810,44 @@ end
 
 ---Setup :NotifierDismiss command
 function Commands.setup_dismiss_command()
-  vim.api.nvim_create_user_command("NotifierDismiss", function()
-    UI.dismiss_all()
+  vim.api.nvim_create_user_command("NotifierDismiss", function(cmd)
+    local opts = {}
+
+    -- Parse arguments
+    if cmd.args and cmd.args ~= "" then
+      local args = vim.split(cmd.args, "%s+")
+
+      for _, arg in ipairs(args) do
+        if arg == "immediate" or arg == "false" then
+          opts.animated = false
+        elseif arg == "animated" or arg == "true" then
+          opts.animated = true
+        elseif arg:match("^stagger=(%d+)") then
+          local delay = tonumber(arg:match("^stagger=(%d+)"))
+          if delay then
+            opts.stagger = delay
+            opts.animated = true -- Enable animation if stagger is specified
+          end
+        end
+      end
+    end
+
+    M.dismiss_all(opts)
   end, {
-    desc = "Dismiss all notifications",
+    desc = "Dismiss all notifications with optional animation and stagger",
+    nargs = "*",
+    complete = function(arg_lead, cmd_line, cursor_pos)
+      local completions = { "animated", "immediate", "stagger=50", "stagger=100" }
+
+      -- Filter completions based on what's already typed
+      if arg_lead ~= "" then
+        return vim.tbl_filter(function(comp)
+          return vim.startswith(comp, arg_lead)
+        end, completions)
+      end
+
+      return completions
+    end,
   })
 end
 
@@ -1893,9 +2036,10 @@ end
 ---@tag notifier.dismiss_all()
 
 ---Dismiss all active notifications immediately
+---@param opts? boolean|{ animated?: boolean, stagger?: number } Options for dismissal
 ---@return nil
-function M.dismiss_all()
-  UI.dismiss_all()
+function M.dismiss_all(opts)
+  UI.dismiss_all(opts)
 end
 
 -- ============================================================================
