@@ -191,6 +191,8 @@ Notifier.Notification                    *notifier.public.Notifier.Notification*
         {_expired?}               (boolean)                                                                     Internal flag marking notification as expired
         {_notif_formatter?}       (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Custom formatter
         {_notif_formatter_data?}  (table)                                                                       Arbitrary data passed to custom formatter
+        {_animating?}             (boolean)                                                                     Internal flag marking notification as animating
+        {_animation_alpha?}       (number)                                                                      Animation alpha value (0-1)
 
 
 Notifier.Group                                  *notifier.public.Notifier.Group*
@@ -291,6 +293,28 @@ Notifier.Config                                *notifier.public.Notifier.Config*
         {padding?}                  (Notifier.Config.Padding)                                                     Padding configuration for notification windows
         {default_group?}            (Notifier.GroupConfigsKey)                                                    Default group for notifications without explicit group
         {group_configs?}            (table<Notifier.GroupConfigsKey,Notifier.GroupConfigs>)                       Configuration for each notification group
+        {animation?}                (Notifier.Config.Animation)                                                   Animation configuration
+
+
+                                     *notifier.public.Notifier.Config.Animation*
+Notifier.Config.Animation
+    Animation configuration.
+
+    Fields: ~
+        {enabled?}            (boolean)  Whether animations are enabled (default: false)
+        {fade_out_duration?}  (integer)  Duration of fade out animations in milliseconds (default: 300)
+
+
+Notifier.AnimationState                *notifier.public.Notifier.AnimationState*
+    Animation state for notifications
+
+    Fields: ~
+        {notification}  (Notifier.Notification)  Reference to the notification
+        {start_time}    (number)                 Animation start timestamp
+        {duration}      (number)                 Animation duration in milliseconds
+        {type}          (string)                 Animation type ('fade_out')
+        {progress}      (number)                 Current progress (0-1)
+        {completed}     (boolean)                Whether animation is complete
 
 
 ==============================================================================
