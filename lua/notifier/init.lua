@@ -398,7 +398,7 @@ local DEFAULT_CONFIG = {
     },
     ["top-center"] = {
       anchor = "NW",
-      row = 1,
+      row = 0,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
     },
