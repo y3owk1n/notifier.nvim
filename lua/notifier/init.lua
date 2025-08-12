@@ -218,6 +218,8 @@ local setup_complete = false
 ---@field _expired? boolean Internal flag marking notification as expired
 ---@field _notif_formatter? fun(opts: Notifier.NotificationFormatterOpts): Notifier.FormattedNotifOpts[] Custom formatter
 ---@field _notif_formatter_data? table Arbitrary data passed to custom formatter
+---@field _animating? boolean Internal flag marking notification as animating
+---@field _animation_alpha? number Animation alpha value (0-1)
 
 ---Internal group state management for notification positioning.
 ---@class Notifier.Group
@@ -284,6 +286,12 @@ local setup_complete = false
 ---@field padding? Notifier.Config.Padding Padding configuration for notification windows
 ---@field default_group? Notifier.GroupConfigsKey Default group for notifications without explicit group
 ---@field group_configs? table<Notifier.GroupConfigsKey, Notifier.GroupConfigs> Configuration for each notification group
+---@field animation? Notifier.Config.Animation Animation configuration
+
+---Animation configuration.
+---@class Notifier.Config.Animation
+---@field enabled? boolean Whether animations are enabled (default: false)
+---@field fade_out_duration? integer Duration of fade out animations in milliseconds (default: 300)
 
 -- ============================================================================
 -- CONSTANTS & GLOBAL STATE
@@ -374,6 +382,10 @@ local DEFAULT_CONFIG = {
   },
   notif_formatter = nil, -- Set below
   notif_history_formatter = nil, -- Set below
+  animation = {
+    enabled = false,
+    fade_out_duration = 300,
+  },
 }
 
 ---Validate configuration
@@ -635,6 +647,188 @@ function Utils.ensure_is_virtual(line_data)
   return line_data
 end
 
+---Apply alpha transparency to formatted notification content
+---@param formatted Notifier.FormattedNotifOpts[] Formatted content
+---@param alpha number Alpha value (0-1)
+---@return Notifier.FormattedNotifOpts[] Modified content with alpha applied
+function Utils.apply_alpha_to_formatted(formatted, alpha)
+  if alpha >= 1.0 then
+    return formatted
+  end
+
+  for _, item in ipairs(formatted) do
+    -- Create faded highlight group
+    item.hl_group = Utils.create_faded_highlight(item.hl_group or "NotifierNormal", alpha)
+  end
+
+  return formatted
+end
+
+---Create a faded version of a highlight group
+---@param hl_group string Original highlight group
+---@param alpha number Alpha value (0-1)
+---@return string Name of the faded highlight group
+function Utils.create_faded_highlight(hl_group, alpha)
+  local faded_name = "notifier_" .. hl_group .. "_fade_" .. math.floor(alpha * 100)
+
+  -- Check if the highlight already exists
+  local existing = vim.api.nvim_get_hl(0, { name = faded_name })
+  if existing and not vim.tbl_isempty(existing) then
+    return faded_name
+  end
+
+  -- Get resolved highlight (following links)
+  local resolved_hl = Utils.resolve_highlight_group(hl_group)
+  if not resolved_hl or vim.tbl_isempty(resolved_hl) then
+    return hl_group
+  end
+
+  -- Create faded version
+  local faded_hl = vim.deepcopy(resolved_hl)
+
+  -- Apply alpha to foreground
+  if faded_hl.fg then
+    faded_hl.fg = Utils.blend_color_with_background(faded_hl.fg, alpha)
+  end
+
+  -- Apply alpha to background
+  if faded_hl.bg then
+    faded_hl.bg = Utils.blend_color_with_background(faded_hl.bg, alpha)
+  end
+
+  -- Remove any link property since we're creating a concrete highlight
+  faded_hl.link = nil
+
+  vim.api.nvim_set_hl(0, faded_name, faded_hl)
+
+  return faded_name
+end
+
+---Blend a color with background using alpha
+---@param color number Color value
+---@param alpha number Alpha value (0-1)
+---@return number Blended color
+function Utils.blend_color_with_background(color, alpha)
+  if alpha >= 1.0 then
+    return color
+  end
+
+  -- Get notification window background color
+  local bg_color = Utils.get_notification_window_bg_color()
+
+  -- Convert to RGB
+  local function to_rgb(c)
+    return {
+      r = math.floor(c / 65536) % 256, -- Extract red
+      g = math.floor(c / 256) % 256, -- Extract green
+      b = c % 256, -- Extract blue
+    }
+  end
+
+  -- Convert from RGB
+  local function from_rgb(rgb)
+    return rgb.r * 65536 + rgb.g * 256 + rgb.b
+  end
+
+  local fg_rgb = to_rgb(color)
+  local bg_rgb = to_rgb(bg_color)
+
+  -- Blend
+  local blended = {
+    r = math.floor(fg_rgb.r * alpha + bg_rgb.r * (1 - alpha)),
+    g = math.floor(fg_rgb.g * alpha + bg_rgb.g * (1 - alpha)),
+    b = math.floor(fg_rgb.b * alpha + bg_rgb.b * (1 - alpha)),
+  }
+
+  local result = from_rgb(blended)
+
+  return result
+end
+
+---Resolve a highlight group, following links to get actual color values
+---@param hl_name string Highlight group name
+---@param max_depth? number Maximum recursion depth (default: 10)
+---@return table|nil Resolved highlight table with actual colors
+function Utils.resolve_highlight_group(hl_name, max_depth)
+  max_depth = max_depth or 10
+
+  if max_depth <= 0 then
+    return nil -- Prevent infinite recursion
+  end
+
+  local hl = vim.api.nvim_get_hl(0, { name = hl_name })
+  if not hl or vim.tbl_isempty(hl) then
+    return nil
+  end
+
+  -- If this highlight has a link, follow it
+  if hl.link then
+    return Utils.resolve_highlight_group(hl.link, max_depth - 1)
+  end
+
+  -- If it has actual color values, return them
+  if hl.fg or hl.bg or hl.sp then
+    return hl
+  end
+
+  return nil
+end
+
+---Get the background color of notification windows
+---@return number Background color value
+function Utils.get_notification_window_bg_color()
+  -- Priority list of highlight groups to check
+  local hl_groups = {
+    "NotifierNormal",
+    "NormalFloat",
+    "Normal",
+  }
+
+  for _, hl_name in ipairs(hl_groups) do
+    local resolved_hl = Utils.resolve_highlight_group(hl_name)
+    if resolved_hl and resolved_hl.bg then
+      return resolved_hl.bg
+    end
+  end
+
+  -- Try to get background from terminal colors if available
+  local term_bg = vim.g.terminal_color_background
+  if term_bg then
+    -- Convert from hex string if needed
+    if type(term_bg) == "string" then
+      local hex = term_bg:gsub("#", "")
+      return tonumber(hex, 16) or 0x000000
+    elseif type(term_bg) == "number" then
+      return term_bg
+    end
+  end
+
+  -- Ultimate fallback - use a reasonable dark/light default
+  local bg_option = vim.o.background
+  if bg_option == "dark" then
+    return 0x1e1e2e -- Dark purple-ish instead of pure black
+  else
+    return 0xf8f8f2 -- Slightly off-white instead of pure white
+  end
+end
+
+---Debug function to check what colors are being used
+---@return table Debug information about colors
+function Utils.debug_fade_colors()
+  local bg_color = Utils.get_notification_window_bg_color()
+  local notifier_hl = Utils.resolve_highlight_group("NotifierNormal")
+  local normal_float_hl = Utils.resolve_highlight_group("NormalFloat")
+  local normal_hl = Utils.resolve_highlight_group("Normal")
+
+  return {
+    background_color = string.format("#%06x", bg_color),
+    notifier_normal = notifier_hl,
+    normal_float = normal_float_hl,
+    normal = normal_hl,
+    vim_background = vim.o.background,
+  }
+end
+
 -- ============================================================================
 -- GROUP MANAGEMENT
 -- ============================================================================
@@ -706,10 +900,150 @@ function GroupManager.cleanup_expired()
   for _, group in pairs(State.groups) do
     for i = #group.notifications, 1, -1 do
       local notif = group.notifications[i]
-      if notif._expired then
+      if notif._expired and not notif._animating then
         table.remove(group.notifications, i)
       end
     end
+  end
+end
+
+-- ============================================================================
+-- ANIMATION SYSTEM
+-- ============================================================================
+
+---@private
+---@class Notifier.AnimationManager
+local AnimationManager = {}
+
+---Animation state for notifications
+---@class Notifier.AnimationState
+---@field notification Notifier.Notification Reference to the notification
+---@field start_time number Animation start timestamp
+---@field duration number Animation duration in milliseconds
+---@field type string Animation type ('fade_out')
+---@field progress number Current progress (0-1)
+---@field completed boolean Whether animation is complete
+
+---Active animations map: notification_id -> AnimationState
+---@type table<any, Notifier.AnimationState>
+local active_animations = {}
+
+---Animation timer
+---@type uv.uv_timer_t?
+local animation_timer = nil
+
+---Start fade out animation for a notification
+---@param notification Notifier.Notification
+---@param duration? number Animation duration in ms (default: 300)
+function AnimationManager.start_fade_out(notification, duration)
+  duration = duration or 300
+  local animation_id = notification.id or tostring(notification)
+
+  active_animations[animation_id] = {
+    notification = notification,
+    start_time = uv.hrtime() / 1e6, -- Convert to milliseconds
+    duration = duration,
+    type = "fade_out",
+    progress = 0,
+    completed = false,
+  }
+
+  -- Mark notification as animating
+  notification._animating = true
+  notification._animation_alpha = 1.0
+
+  AnimationManager.start_animation_loop()
+end
+
+---Start the animation loop if not already running
+function AnimationManager.start_animation_loop()
+  if animation_timer and not animation_timer:is_closing() then
+    return -- Already running
+  end
+
+  animation_timer = uv.new_timer()
+  if not animation_timer then
+    return
+  end
+
+  animation_timer:start(
+    16,
+    16,
+    vim.schedule_wrap(function() -- ~60fps
+      AnimationManager.update_animations()
+    end)
+  )
+end
+
+---Update all active animations
+function AnimationManager.update_animations()
+  local current_time = uv.hrtime() / 1e6
+  local any_active = false
+  local groups_to_render = {}
+
+  for animation_id, anim in pairs(active_animations) do
+    if not anim.completed then
+      local elapsed = current_time - anim.start_time
+      anim.progress = math.min(elapsed / anim.duration, 1.0)
+
+      if anim.type == "fade_out" then
+        -- Smooth fade out using easing
+        local alpha = 1.0 - AnimationManager.ease_out_cubic(anim.progress)
+        anim.notification._animation_alpha = alpha
+
+        if anim.progress >= 1.0 then
+          anim.completed = true
+          anim.notification._expired = true
+          anim.notification._animating = false
+          anim.notification._animation_alpha = 0
+        end
+      end
+
+      any_active = true
+
+      -- Mark groups for re-render
+      for group_name, group in pairs(State.groups) do
+        for _, notif in ipairs(group.notifications) do
+          if notif == anim.notification then
+            groups_to_render[group_name] = group
+            break
+          end
+        end
+      end
+    end
+  end
+
+  -- Render affected groups
+  for _, group in pairs(groups_to_render) do
+    M._internal.ui.render_group(group)
+  end
+
+  -- Clean up completed animations
+  for animation_id, anim in pairs(active_animations) do
+    if anim.completed then
+      active_animations[animation_id] = nil
+    end
+  end
+
+  -- Stop animation loop if no active animations
+  if not any_active then
+    AnimationManager.stop_animation_loop()
+  end
+end
+
+---Easing function for smooth animation
+---@param t number Progress (0-1)
+---@return number Eased value
+function AnimationManager.ease_out_cubic(t)
+  return 1 - math.pow(1 - t, 3)
+end
+
+---Stop the animation loop
+function AnimationManager.stop_animation_loop()
+  if animation_timer and not animation_timer:is_closing() then
+    animation_timer:stop()
+    animation_timer:close()
+    animation_timer = nil
   end
 end
 
@@ -830,6 +1164,14 @@ function UI.render_group(group)
   for i = #live, 1, -1 do
     local notif = live[i]
 
+    -- Calculate alpha for animation
+    local alpha = notif._animation_alpha or 1.0
+
+    -- Skip if fully faded out
+    if alpha <= 0 then
+      goto continue
+    end
+
     -- Handle custom formatters with empty messages
     if notif._notif_formatter and type(notif._notif_formatter) == "function" and notif.msg == "" then
       local formatted = notif._notif_formatter({
@@ -839,6 +1181,10 @@ function UI.render_group(group)
         log_level_map = log_level_map,
       })
       formatted = Utils.ensure_is_virtual(formatted)
+
+      -- Apply alpha to formatted content
+      formatted = Utils.apply_alpha_to_formatted(formatted, alpha)
+
       local formatted_line_data = Utils.parse_format_fn_result(formatted)
       local formatted_line = Utils.convert_parsed_format_result_to_string(formatted_line_data)
 
@@ -857,6 +1203,10 @@ function UI.render_group(group)
         log_level_map = log_level_map,
       })
       formatted = Utils.ensure_is_virtual(formatted)
+
+      -- Apply alpha to formatted content
+      formatted = Utils.apply_alpha_to_formatted(formatted, alpha)
+
       local formatted_line_data = Utils.parse_format_fn_result(formatted)
       local formatted_line = Utils.convert_parsed_format_result_to_string(formatted_line_data)
 
@@ -1240,21 +1590,18 @@ local function start_cleanup_timer()
     vim.schedule_wrap(function()
       local now = os.time() * 1000
       for _, group in pairs(State.groups) do
-        local changed = false
         for i = #group.notifications, 1, -1 do
           local notif = group.notifications[i]
-          if notif._expired then
+          if notif._expired or notif._animating then
             goto continue
           end
+
           local elapsed_ms = (now - ((notif.updated_at or notif.created_at) * 1000))
           if notif.timeout > 0 and elapsed_ms >= notif.timeout then
-            notif._expired = true
-            changed = true
+            -- Start fade out animation instead of immediate expiration
+            AnimationManager.start_fade_out(notif, 300)
           end
           ::continue::
-        end
-        if changed then
-          UI.debounce_render()
         end
       end
     end)
@@ -1315,6 +1662,9 @@ local function setup_autocmds()
         render_timer:stop()
         render_timer:close()
       end
+
+      -- Stop animation loop
+      AnimationManager.stop_animation_loop()
 
       -- Clean up notification windows and buffers
       UI.dismiss_all()
@@ -1508,6 +1858,7 @@ M._internal = {
   notification_manager = NotificationManager,
   validator = Validator,
   commands = Commands,
+  animation_manager = AnimationManager,
 }
 
 return M
