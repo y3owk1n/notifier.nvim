@@ -112,8 +112,14 @@ require("notifier").setup({
   }
 
   -- Formatters
-  notif_formatter = U.default_notif_formatter,
-  notif_history_formatter = U.default_notif_history_formatter,
+  notif_formatter = nil,
+  notif_history_formatter = nil,
+
+  -- Animation
+  animation = {
+    enabled = false, -- animation is off by default
+    fade_out_duration = 300,
+  },
 })
 ```
 

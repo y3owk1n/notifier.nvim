@@ -99,6 +99,10 @@
 ---  },
 ---  notif_formatter = U.default_notif_formatter,
 ---  notif_history_formatter = U.default_notif_history_formatter,
+---  animation = {
+---    enabled = false,
+---    fade_out_duration = 300,
+---  },
 ---}
 ---
 ---## Group positioning ~
