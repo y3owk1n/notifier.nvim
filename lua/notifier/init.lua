@@ -1314,6 +1314,7 @@ end
 ---@param group Notifier.Group Group to render
 function UI.render_group(group)
   -- Filter active notifications
+  ---@type Notifier.Notification[]
   local live = vim.tbl_filter(function(n)
     return not n._expired
   end, group.notifications)
@@ -1342,36 +1343,17 @@ function UI.render_group(group)
       goto continue
     end
 
-    -- Handle custom formatters with empty messages
-    if notif._notif_formatter and type(notif._notif_formatter) == "function" and notif.msg == "" then
-      local formatted = notif._notif_formatter({
-        notif = notif,
-        line = "",
-        config = M.config,
-        log_level_map = log_level_map,
-      })
-      formatted = Utils.ensure_is_virtual(formatted)
-
-      -- Apply alpha to formatted content
-      formatted = Utils.apply_alpha_to_formatted(formatted, alpha)
-
-      local formatted_line_data = Utils.parse_format_fn_result(formatted)
-      local formatted_line = Utils.convert_parsed_format_result_to_string(formatted_line_data)
-
-      table.insert(lines, formatted_line)
-      table.insert(formatted_raw_data, formatted_line_data)
-      goto continue
-    end
-
-    -- Process regular messages line by line
     local msg_lines = vim.split(notif.msg, "\n")
     for _, line in ipairs(msg_lines) do
-      local formatted = M.config.notif_formatter({
+      local formatter = notif._notif_formatter or M.config.notif_formatter
+
+      local formatted = formatter({
         notif = notif,
         line = line,
         config = M.config,
         log_level_map = log_level_map,
       })
+
       formatted = Utils.ensure_is_virtual(formatted)
 
       -- Apply alpha to formatted content
@@ -1780,7 +1762,8 @@ function NotificationManager.notify(msg, level, opts)
   local group_name = Validator.validate_group_name(opts.group_name)
   local group = GroupManager.get_group(group_name)
 
-  local found_notif
+  ---@type Notifier.Notification
+  local found_notif = {}
   for _, n in pairs(group.notifications) do
     if n.id ~= nil and id ~= nil and n.id == id then
       found_notif = n
@@ -1788,9 +1771,7 @@ function NotificationManager.notify(msg, level, opts)
     end
   end
 
-  if group and found_notif then
-    opts = vim.tbl_extend("force", found_notif, opts)
-  end
+  opts = vim.tbl_deep_extend("force", found_notif or {}, opts)
 
   local timeout = Validator.validate_timeout(opts.timeout)
   local hl_group = Validator.validate_hl(opts.hl_group)
@@ -1800,7 +1781,7 @@ function NotificationManager.notify(msg, level, opts)
   local _notif_formatter_data = type(opts._notif_formatter_data) == "table" and opts._notif_formatter_data or nil
 
   level = Validator.validate_level(level)
-  msg = Validator.validate_msg(msg)
+  msg = Validator.validate_msg(found_notif.msg or msg)
 
   -- Replace existing notification with same ID
   if id then
@@ -1814,7 +1795,8 @@ function NotificationManager.notify(msg, level, opts)
         notif.hl_group = hl_group
         notif._notif_formatter = _notif_formatter
         notif._notif_formatter_data = _notif_formatter_data
-        notif._expired = false
+        notif._expired = false -- reset the expired flag
+        notif._animation_alpha = 1.0 -- reset the alpha
 
         -- Always render immediately regardless of animation setting
         -- We don't want to animate the notification if it's updating the existing one
