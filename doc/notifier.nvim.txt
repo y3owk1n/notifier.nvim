@@ -64,6 +64,7 @@ Default values:
 {
   default_timeout = 3000,
   border = "none",
+  winblend = 0,
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
   default_group = "bottom-right",
   group_configs = {
@@ -71,60 +72,51 @@ Default values:
       anchor = "NW",
       row = 0,
       col = 0,
-      winblend = 0,
     },
     ["top-center"] = {
       anchor = "NW",
       row = 1,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["top-right"] = {
       anchor = "NE",
       row = 0,
       col = vim.o.columns,
-      winblend = 0,
     },
     ["left-center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["center"] = {
       anchor = "NW",
       row = vim.o.lines / 2,
       col = vim.o.columns / 2,
       center_mode = "true", -- Center both horizontally and vertically
-      winblend = 0,
     },
     ["right-center"] = {
       anchor = "NE",
       row = vim.o.lines / 2,
       col = vim.o.columns - 1,
       center_mode = "vertical", -- Center vertically only
-      winblend = 0,
     },
     ["bottom-left"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = 0,
-      winblend = 0,
     },
     ["bottom-center"] = {
       anchor = "SW",
       row = vim.o.lines - 2,
       col = vim.o.columns / 2,
       center_mode = "horizontal", -- Center horizontally only
-      winblend = 0,
     },
     ["bottom-right"] = {
       anchor = "SE",
       row = vim.o.lines - 2,
       col = vim.o.columns,
-      winblend = 0,
     },
   },
   icons = {
@@ -335,6 +327,7 @@ Notifier.Config                                *notifier.public.Notifier.Config*
     Fields: ~
         {default_timeout?}          (integer)                                                                     Default timeout in milliseconds (default: 3000)
         {border?}                   (string)                                                                      Border style for floating windows (default: "none")
+        {winblend?}                 (integer)                                                                     Window transparency (0-100, default: 0)
         {icons?}                    (table<integer,string>)                                                       Icons for each log level (keys are vim.log.levels values)
         {notif_formatter?}          (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format live notifications
         {notif_history_formatter?}  (fun(opts:Notifier.NotificationFormatterOpts):Notifier.FormattedNotifOpts[])  Function to format notifications in history view
