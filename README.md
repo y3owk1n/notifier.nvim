@@ -492,8 +492,9 @@ update_download_progress("large-file.zip", 100, 100)    -- 100%
 -- Show notification history
 require("notifier").show_history()
 
--- Dismiss all notifications immediately
-require("notifier").dismiss_all()
+---Dismiss all active notifications immediately or with animation
+---@param opts? boolean|{ animated?: boolean, stagger?: number } Options for dismissal
+require("notifier").dismiss_all(opts)
 ```
 
 ### Keybindings Example
