@@ -60,6 +60,9 @@ require("notifier").setup({
   -- Notification timeout in milliseconds
   default_timeout = 3000,
 
+  -- Debounce time for window resize events
+  resize_debounce_ms = 150,
+
   -- Border style for floating windows
   border = "none", -- "none", "single", "double", "rounded", "solid", "shadow"
 

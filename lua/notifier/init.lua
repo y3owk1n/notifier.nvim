@@ -61,6 +61,7 @@
 ---Default values:
 ---{
 ---  default_timeout = 3000,
+---  resize_debounce_ms = 150,
 ---  border = "none",
 ---  winblend = 0,
 ---  padding = { top = 0, right = 0, bottom = 0, left = 0 },
@@ -328,6 +329,7 @@ local setup_complete = false
 ---Main plugin configuration table.
 ---@class Notifier.Config
 ---@field default_timeout? integer Default timeout in milliseconds (default: 3000)
+---@field resize_debounce_ms? integer Debounce time for window resize events (default: 150)
 ---@field border? string Border style for floating windows (default: "none")
 ---@field winblend? integer Window transparency (0-100, default: 0)
 ---@field icons? table<integer, string> Icons for each log level (keys are vim.log.levels values)
@@ -405,6 +407,7 @@ end
 ---@type Notifier.Config
 local DEFAULT_CONFIG = {
   default_timeout = 3000,
+  resize_debounce_ms = 150,
   border = "none",
   winblend = 0,
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
@@ -864,10 +867,14 @@ function Utils.calculate_optimal_width(lines, config)
 
   -- Calculate screen-based constraints
   local screen_width = vim.o.columns
+  ---@diagnostic disable-next-line: need-check-nil
   local min_width = width_config.min_width or 20
+  ---@diagnostic disable-next-line: need-check-nil
   local max_width = width_config.max_width or math.floor(screen_width * (width_config.max_width_percentage or 0.4))
+  ---@diagnostic disable-next-line: need-check-nil
   local preferred_width = width_config.preferred_width or 50
 
+  ---@diagnostic disable-next-line: need-check-nil
   if not width_config.adaptive then
     return math.min(preferred_width, max_width)
   end
@@ -987,7 +994,11 @@ end
 ---@return string[] processed_lines Array of processed message lines
 function Utils.process_message_with_wrapping(msg, width, config)
   local width_config = config.width or DEFAULT_CONFIG.width
+
+  ---@diagnostic disable-next-line: need-check-nil
   local should_wrap = width_config.wrap_text ~= false
+
+  ---@diagnostic disable-next-line: need-check-nil
   local wrap_at_words = width_config.wrap_at_words ~= false
 
   -- Split original message into lines
@@ -1194,7 +1205,7 @@ function AnimationManager.update_animations()
   local any_active = false
   local groups_to_render = {}
 
-  for animation_id, anim in pairs(active_animations) do
+  for _, anim in pairs(active_animations) do
     if not anim.completed then
       local elapsed = current_time - anim.start_time
       anim.progress = math.min(elapsed / anim.duration, 1.0)
@@ -1462,6 +1473,7 @@ function UI.render_group(group)
     for _, line in ipairs(processed_lines) do
       local formatter = notif._notif_formatter or M.config.notif_formatter
 
+      ---@diagnostic disable-next-line: need-check-nil
       local formatted = formatter({
         notif = notif,
         line = line,
@@ -2151,7 +2163,7 @@ function Commands.setup_dismiss_command()
   end, {
     desc = "Dismiss all notifications with optional animation and stagger",
     nargs = "*",
-    complete = function(arg_lead, cmd_line, cursor_pos)
+    complete = function(arg_lead)
       local completions = { "animated", "immediate", "stagger=50", "stagger=100" }
 
       -- Filter completions based on what's already typed
@@ -2197,42 +2209,63 @@ local function setup_autocmds()
     end,
   })
 
+  ---@type uv.uv_timer_t?
+  local resize_timer = nil
+
   -- Handle screen resize
   vim.api.nvim_create_autocmd("VimResized", {
     group = group,
     callback = function()
-      -- Update group configs to new screen dimensions
-      if M.config and M.config.group_configs then
-        for _, group_config in pairs(M.config.group_configs) do
-          -- Update standard edge positions
-          if group_config.anchor:find("E") then
-            group_config.col = vim.o.columns
-          end
-          if group_config.anchor:find("S") then
-            group_config.row = vim.o.lines - 2
-          end
+      if resize_timer and not resize_timer:is_closing() then
+        resize_timer:stop()
+      end
 
-          -- Update center positions based on center_mode
-          if group_config.center_mode then
-            if group_config.center_mode == "true" then
-              -- True center
-              group_config.row = vim.o.lines / 2
-              group_config.col = vim.o.columns / 2
-            elseif group_config.center_mode == "horizontal" then
-              -- Horizontal center only
-              group_config.col = vim.o.columns / 2
-            elseif group_config.center_mode == "vertical" then
-              -- Vertical center only
-              group_config.row = vim.o.lines / 2
-              -- Update right edge if needed
+      resize_timer = uv.new_timer()
+
+      if not resize_timer then
+        return
+      end
+
+      local debounce_ms = M.config.resize_debounce_ms or DEFAULT_CONFIG.resize_debounce_ms or 150
+
+      resize_timer:start(
+        debounce_ms,
+        0,
+        vim.schedule_wrap(function()
+          -- Update group configs to new screen dimensions
+          if M.config and M.config.group_configs then
+            for _, group_config in pairs(M.config.group_configs) do
+              -- Update standard edge positions
               if group_config.anchor:find("E") then
-                group_config.col = vim.o.columns - 1
+                group_config.col = vim.o.columns
+              end
+              if group_config.anchor:find("S") then
+                group_config.row = vim.o.lines - 2
+              end
+
+              -- Update center positions based on center_mode
+              if group_config.center_mode then
+                if group_config.center_mode == "true" then
+                  -- True center
+                  group_config.row = vim.o.lines / 2
+                  group_config.col = vim.o.columns / 2
+                elseif group_config.center_mode == "horizontal" then
+                  -- Horizontal center only
+                  group_config.col = vim.o.columns / 2
+                elseif group_config.center_mode == "vertical" then
+                  -- Vertical center only
+                  group_config.row = vim.o.lines / 2
+                  -- Update right edge if needed
+                  if group_config.anchor:find("E") then
+                    group_config.col = vim.o.columns - 1
+                  end
+                end
               end
             end
           end
-        end
-      end
-      UI.debounce_render()
+          UI.debounce_render()
+        end)
+      )
     end,
   })
 end
