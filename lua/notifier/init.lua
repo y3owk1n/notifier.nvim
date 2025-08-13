@@ -1786,11 +1786,21 @@ function UI.dismiss_all(opts)
   if not animated then
     -- Immediate dismissal
     for _, group in pairs(State.groups) do
+      -- Close the window if it's still open
       if vim.api.nvim_win_is_valid(group.win) then
         vim.api.nvim_win_close(group.win, true)
       end
+
+      -- Delete the buffer if it's still open
       if vim.api.nvim_buf_is_valid(group.buf) then
         vim.api.nvim_buf_delete(group.buf, { force = true })
+      end
+
+      -- Mark non-expired notifications as expired
+      for _, notification in pairs(group.notifications) do
+        if not notification._expired then
+          notification._expired = true
+        end
       end
     end
     return
@@ -1835,6 +1845,13 @@ function UI.dismiss_all(opts)
           end
           if vim.api.nvim_buf_is_valid(group.buf) then
             vim.api.nvim_buf_delete(group.buf, { force = true })
+          end
+
+          -- Mark all non expired notifications as expired
+          for _, notification in pairs(group.notifications) do
+            if not notification._expired then
+              notification._expired = true
+            end
           end
         end
 
