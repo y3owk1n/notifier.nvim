@@ -119,6 +119,15 @@ Default values:
       col = vim.o.columns,
     },
   },
+  width = {
+    min_width = 20, -- Minimum notification width
+    max_width = nil, -- Maximum width (nil = auto-calculate)
+    preferred_width = 50, -- Preferred width when content fits
+    max_width_percentage = 0.4, -- Maximum width as percentage of screen
+    adaptive = true, -- Automatically adjust width based on content
+    wrap_text = true, -- Enable text wrapping for long lines
+    wrap_at_words = true, -- Wrap at word boundaries when possible
+  },
   icons = {
     [vim.log.levels.TRACE] = "󰔚 ",
     [vim.log.levels.DEBUG] = " ",
@@ -335,6 +344,19 @@ Notifier.Config                                *notifier.public.Notifier.Config*
         {default_group?}            (Notifier.GroupConfigsKey)                                                    Default group for notifications without explicit group
         {group_configs?}            (table<Notifier.GroupConfigsKey,Notifier.GroupConfigs>)                       Configuration for each notification group
         {animation?}                (Notifier.Config.Animation)                                                   Animation configuration
+        {width?}                    (Notifier.Config.Width)                                                       Width configuration
+
+
+Notifier.Config.Width                    *notifier.public.Notifier.Config.Width*
+
+    Fields: ~
+        {min_width?}             (integer)  Minimum notification width (default: 20)
+        {max_width?}             (integer)  Maximum width (nil = auto-calculate) (default: nil)
+        {preferred_width?}       (integer)  Preferred width when content fits (default: 50)
+        {max_width_percentage?}  (number)   Maximum width as percentage of screen (default: 0.4)
+        {adaptive?}              (boolean)  Automatically adjust width based on content (default: true)
+        {wrap_text?}             (boolean)  Enable text wrapping for long lines (default: true)
+        {wrap_at_words?}         (boolean)  Wrap at word boundaries when possible (default: true)
 
 
                                      *notifier.public.Notifier.Config.Animation*
