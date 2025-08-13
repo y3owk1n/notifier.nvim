@@ -1698,8 +1698,6 @@ function UI.dismiss_all(opts)
         vim.api.nvim_buf_delete(group.buf, { force = true })
       end
     end
-    ---@diagnostic disable-next-line: missing-fields
-    State.groups = {}
     return
   end
 
@@ -1744,8 +1742,6 @@ function UI.dismiss_all(opts)
             vim.api.nvim_buf_delete(group.buf, { force = true })
           end
         end
-        ---@diagnostic disable-next-line: missing-fields
-        State.groups = {}
 
         cleanup_timer:close()
       end)
