@@ -117,6 +117,15 @@
 ---      col = vim.o.columns,
 ---    },
 ---  },
+---  width = {
+---    min_width = 20, -- Minimum notification width
+---    max_width = nil, -- Maximum width (nil = auto-calculate)
+---    preferred_width = 50, -- Preferred width when content fits
+---    max_width_percentage = 0.4, -- Maximum width as percentage of screen
+---    adaptive = true, -- Automatically adjust width based on content
+---    wrap_text = true, -- Enable text wrapping for long lines
+---    wrap_at_words = true, -- Wrap at word boundaries when possible
+---  },
 ---  icons = {
 ---    [vim.log.levels.TRACE] = "󰔚 ",
 ---    [vim.log.levels.DEBUG] = " ",
@@ -328,6 +337,16 @@ local setup_complete = false
 ---@field default_group? Notifier.GroupConfigsKey Default group for notifications without explicit group
 ---@field group_configs? table<Notifier.GroupConfigsKey, Notifier.GroupConfigs> Configuration for each notification group
 ---@field animation? Notifier.Config.Animation Animation configuration
+---@field width? Notifier.Config.Width Width configuration
+
+---@class Notifier.Config.Width
+---@field min_width? integer Minimum notification width (default: 20)
+---@field max_width? integer Maximum width (nil = auto-calculate) (default: nil)
+---@field preferred_width? integer Preferred width when content fits (default: 50)
+---@field max_width_percentage? number Maximum width as percentage of screen (default: 0.4)
+---@field adaptive? boolean Automatically adjust width based on content (default: true)
+---@field wrap_text? boolean Enable text wrapping for long lines (default: true)
+---@field wrap_at_words? boolean Wrap at word boundaries when possible (default: true)
 
 ---Animation configuration.
 ---@class Notifier.Config.Animation
@@ -442,6 +461,15 @@ local DEFAULT_CONFIG = {
       col = vim.o.columns,
     },
   },
+  width = {
+    min_width = 20, -- Minimum notification width
+    max_width = nil, -- Maximum width (nil = auto-calculate)
+    preferred_width = 50, -- Preferred width when content fits
+    max_width_percentage = 0.4, -- Maximum width as percentage of screen
+    adaptive = true, -- Automatically adjust width based on content
+    wrap_text = true, -- Enable text wrapping for long lines
+    wrap_at_words = true, -- Wrap at word boundaries when possible
+  },
   icons = {
     [vim.log.levels.TRACE] = "󰔚 ",
     [vim.log.levels.DEBUG] = " ",
@@ -457,77 +485,6 @@ local DEFAULT_CONFIG = {
     fade_out_duration = 300,
   },
 }
-
----Validate configuration
----@param config Notifier.Config
----@return boolean, string?
----@private
-local function validate_config(config)
-  -- Validate timeout
-  if config.default_timeout and (type(config.default_timeout) ~= "number" or config.default_timeout < 0) then
-    return false, "default_timeout must be a positive number"
-  end
-
-  -- Validate global winblend
-  if config.winblend and (type(config.winblend) ~= "number" or config.winblend < 0 or config.winblend > 100) then
-    return false, "winblend must be a number between 0 and 100"
-  end
-
-  -- Validate padding
-  if config.padding then
-    local function is_valid_padding(v)
-      return v == nil or (type(v) == "number" and v >= 0)
-    end
-    if
-      not (
-        is_valid_padding(config.padding.top)
-        and is_valid_padding(config.padding.right)
-        and is_valid_padding(config.padding.bottom)
-        and is_valid_padding(config.padding.left)
-      )
-    then
-      return false, "padding values must be non-negative numbers"
-    end
-  end
-
-  -- Validate group configs
-  if config.group_configs then
-    local valid_anchors = { NW = true, NE = true, SW = true, SE = true } -- Only corner anchors
-    local valid_center_modes = { ["true"] = true, horizontal = true, vertical = true }
-
-    for group_name, group_config in pairs(config.group_configs) do
-      if type(group_name) ~= "string" then
-        return false, "group config keys must be strings"
-      end
-      if not valid_anchors[group_config.anchor] then
-        return false,
-          string.format(
-            "invalid anchor '%s' for group '%s' (only NW, NE, SW, SE supported)",
-            tostring(group_config.anchor),
-            group_name
-          )
-      end
-      if type(group_config.row) ~= "number" or group_config.row < 0 then
-        return false, string.format("row must be non-negative number for group '%s'", group_name)
-      end
-      if type(group_config.col) ~= "number" or group_config.col < 0 then
-        return false, string.format("col must be non-negative number for group '%s'", group_name)
-      end
-      if
-        group_config.winblend
-        and (type(group_config.winblend) ~= "number" or group_config.winblend < 0 or group_config.winblend > 100)
-      then
-        return false, string.format("winblend must be 0-100 for group '%s'", group_name)
-      end
-      if group_config.center_mode and not valid_center_modes[group_config.center_mode] then
-        return false,
-          string.format("invalid center_mode '%s' for group '%s'", tostring(group_config.center_mode), group_name)
-      end
-    end
-  end
-
-  return true, nil
-end
 
 -- ============================================================================
 -- UTILITY FUNCTIONS
@@ -896,6 +853,159 @@ function Utils.get_notification_window_bg_color()
   else
     return 0xf8f8f2 -- Slightly off-white instead of pure white
   end
+end
+
+---Calculate optimal width for notification content
+---@param lines string[] Array of text lines to measure
+---@param config Notifier.Config Configuration options
+---@return integer width Optimal width in characters
+function Utils.calculate_optimal_width(lines, config)
+  local width_config = config.width or DEFAULT_CONFIG.width
+
+  -- Calculate screen-based constraints
+  local screen_width = vim.o.columns
+  local min_width = width_config.min_width or 20
+  local max_width = width_config.max_width or math.floor(screen_width * (width_config.max_width_percentage or 0.4))
+  local preferred_width = width_config.preferred_width or 50
+
+  if not width_config.adaptive then
+    return math.min(preferred_width, max_width)
+  end
+
+  -- Calculate natural content width
+  local content_width = 0
+  for _, line in ipairs(lines) do
+    local line_width = vim.fn.strdisplaywidth(line)
+    content_width = math.max(content_width, line_width)
+  end
+
+  -- Apply constraints
+  local optimal_width = math.max(min_width, math.min(max_width, content_width))
+
+  -- Use preferred width if content fits comfortably
+  if content_width <= preferred_width and preferred_width <= max_width then
+    optimal_width = preferred_width
+  end
+
+  -- Ensure we don't go below minimum even with small content
+  return math.max(min_width, optimal_width)
+end
+
+---Wrap text to fit within specified width
+---@param text string Text to wrap
+---@param width integer Target width in characters
+---@param wrap_at_words? boolean Whether to wrap at word boundaries (default: true)
+---@return string[] wrapped_lines Array of wrapped lines
+function Utils.wrap_text(text, width, wrap_at_words)
+  if width <= 0 then
+    return { text }
+  end
+
+  -- If text already fits, return as-is
+  if vim.fn.strdisplaywidth(text) <= width then
+    return { text }
+  end
+
+  wrap_at_words = wrap_at_words ~= false -- Default to true
+
+  if not wrap_at_words then
+    -- Hard wrap - just break at width
+    return Utils.hard_wrap_text(text, width)
+  end
+
+  -- Smart wrap at word boundaries
+  local words = vim.split(text, " ")
+  local lines = {}
+  local current_line = ""
+
+  for _, word in ipairs(words) do
+    local test_line = current_line == "" and word or current_line .. " " .. word
+    local test_width = vim.fn.strdisplaywidth(test_line)
+
+    if test_width <= width then
+      current_line = test_line
+    else
+      -- Current word doesn't fit
+      if current_line ~= "" then
+        -- Save current line and start new one
+        table.insert(lines, current_line)
+        current_line = word
+      else
+        -- Even single word doesn't fit - force break it
+        local broken_words = Utils.hard_wrap_text(word, width)
+        for i, broken_word in ipairs(broken_words) do
+          if i == #broken_words then
+            current_line = broken_word -- Last piece becomes current line
+          else
+            table.insert(lines, broken_word)
+          end
+        end
+      end
+    end
+  end
+
+  -- Add remaining content
+  if current_line ~= "" then
+    table.insert(lines, current_line)
+  end
+
+  return lines
+end
+
+---Hard wrap text at character boundaries
+---@param text string Text to wrap
+---@param width integer Target width
+---@return string[] wrapped_lines Array of wrapped lines
+function Utils.hard_wrap_text(text, width)
+  if width <= 0 then
+    return { text }
+  end
+
+  local lines = {}
+  local pos = 1
+  local text_len = #text
+
+  while pos <= text_len do
+    local end_pos = pos + width - 1
+    if end_pos >= text_len then
+      -- Last piece
+      table.insert(lines, string.sub(text, pos))
+      break
+    else
+      table.insert(lines, string.sub(text, pos, end_pos))
+      pos = end_pos + 1
+    end
+  end
+
+  return #lines > 0 and lines or { text }
+end
+
+---Process notification message with wrapping support
+---@param msg string Original message
+---@param width integer Target width for wrapping
+---@param config Notifier.Config Configuration options
+---@return string[] processed_lines Array of processed message lines
+function Utils.process_message_with_wrapping(msg, width, config)
+  local width_config = config.width or DEFAULT_CONFIG.width
+  local should_wrap = width_config.wrap_text ~= false
+  local wrap_at_words = width_config.wrap_at_words ~= false
+
+  -- Split original message into lines
+  local original_lines = vim.split(msg, "\n")
+  local processed_lines = {}
+
+  for _, line in ipairs(original_lines) do
+    if should_wrap and vim.fn.strdisplaywidth(line) > width then
+      -- Wrap this line
+      local wrapped_lines = Utils.wrap_text(line, width, wrap_at_words)
+      vim.list_extend(processed_lines, wrapped_lines)
+    else
+      -- Keep line as-is
+      table.insert(processed_lines, line)
+    end
+  end
+
+  return processed_lines
 end
 
 -- ============================================================================
@@ -1314,6 +1424,26 @@ function UI.render_group(group)
   ---@type Notifier.ComputedLineOpts[][]
   local formatted_raw_data = {}
 
+  local all_message_lines = {}
+
+  for i = #live, 1, -1 do
+    local notif = live[i]
+    local alpha = notif._animation_alpha or 1.0
+
+    if alpha > 0 then
+      local msg_lines = vim.split(notif.msg, "\n")
+      vim.list_extend(all_message_lines, msg_lines)
+    end
+  end
+
+  -- Calculate optimal width based on all content
+  local optimal_width = Utils.calculate_optimal_width(all_message_lines, M.config)
+
+  -- Account for padding in width calculations
+  local pad = Utils.resolve_padding()
+  local content_width = optimal_width - pad.left - pad.right
+  content_width = math.max(1, content_width) -- Ensure positive width
+
   -- Process notifications (newest first)
   for i = #live, 1, -1 do
     local notif = live[i]
@@ -1326,8 +1456,10 @@ function UI.render_group(group)
       goto continue
     end
 
-    local msg_lines = vim.split(notif.msg, "\n")
-    for _, line in ipairs(msg_lines) do
+    -- Process message with wrapping
+    local processed_lines = Utils.process_message_with_wrapping(notif.msg, content_width, M.config)
+
+    for _, line in ipairs(processed_lines) do
       local formatter = notif._notif_formatter or M.config.notif_formatter
 
       local formatted = formatter({
@@ -1353,7 +1485,6 @@ function UI.render_group(group)
   end
 
   -- Add padding lines
-  local pad = Utils.resolve_padding()
   for _ = 1, pad.top do
     table.insert(lines, 1, "")
     table.insert(formatted_raw_data, 1, {})
@@ -1371,18 +1502,9 @@ function UI.render_group(group)
   Utils.setup_virtual_text_hls(ns, group.buf, formatted_raw_data)
 
   -- Calculate window dimensions
-  local width = 0
-  for _, data in pairs(formatted_raw_data) do
-    if type(data) == "table" and #data > 0 then
-      for _, item in pairs(data) do
-        local last_width = ((item.col_end or 0) + (item.virtual_col_end or 0))
-          or vim.fn.strdisplaywidth(item.display_text or "")
-        width = math.max(width, last_width)
-      end
-    end
-  end
-  width = math.min(width, math.floor(vim.o.columns * 0.6))
-  local height = #lines
+  -- Use the optimal width we calculated, accounting for padding
+  local window_width = optimal_width
+  local window_height = #lines
 
   -- Calculate position based on center_mode
   local row, col, anchor = group.config.row, group.config.col, group.config.anchor
@@ -1390,31 +1512,27 @@ function UI.render_group(group)
   if group.config.center_mode then
     if group.config.center_mode == "true" then
       -- Center both horizontally and vertically
-      row = math.max(0, group.config.row - math.floor(height / 2))
-      col = math.max(0, group.config.col - math.floor(width / 2))
+      row = math.max(0, group.config.row - math.floor(window_height / 2))
+      col = math.max(0, group.config.col - math.floor(window_width / 2))
       anchor = "NW" -- Always use NW when centering both dimensions
     elseif group.config.center_mode == "horizontal" then
       -- Center horizontally only
-      col = math.max(0, group.config.col - math.floor(width / 2))
+      col = math.max(0, group.config.col - math.floor(window_width / 2))
       -- Keep the original anchor for vertical positioning
       if anchor == "SW" or anchor == "SE" then
-        -- For bottom anchors, keep the row as-is
         row = group.config.row
       else
-        -- For top anchors, keep the row as-is
         row = group.config.row
       end
       -- Convert to NW/SW for horizontal centering
       anchor = (anchor == "SW" or anchor == "SE") and "SW" or "NW"
     elseif group.config.center_mode == "vertical" then
       -- Center vertically only
-      row = math.max(0, group.config.row - math.floor(height / 2))
+      row = math.max(0, group.config.row - math.floor(window_height / 2))
       -- Keep the original anchor for horizontal positioning
       if anchor == "NE" or anchor == "SE" then
-        -- For right anchors, keep the col as-is
         col = group.config.col
       else
-        -- For left anchors, keep the col as-is
         col = group.config.col
       end
       -- Convert to NW/NE for vertical centering
@@ -1428,8 +1546,8 @@ function UI.render_group(group)
     row = row,
     col = col,
     anchor = anchor,
-    width = width,
-    height = height,
+    width = window_width,
+    height = window_height,
   })
 
   if not ok_win then
@@ -1724,6 +1842,127 @@ function Validator.validate_formatter(formatter)
     return formatter
   end
   return Formatters.default_notif_formatter
+end
+
+---Validate width configuration
+---@param width_config table Width configuration
+---@return boolean, string?
+function Validator.validate_width_config(width_config)
+  if not width_config then
+    return true -- Optional config
+  end
+
+  if width_config.min_width and (type(width_config.min_width) ~= "number" or width_config.min_width < 1) then
+    return false, "width.min_width must be a positive number"
+  end
+
+  if width_config.max_width and (type(width_config.max_width) ~= "number" or width_config.max_width < 1) then
+    return false, "width.max_width must be a positive number"
+  end
+
+  if
+    width_config.preferred_width
+    and (type(width_config.preferred_width) ~= "number" or width_config.preferred_width < 1)
+  then
+    return false, "width.preferred_width must be a positive number"
+  end
+
+  if
+    width_config.max_width_percentage
+    and (
+      type(width_config.max_width_percentage) ~= "number"
+      or width_config.max_width_percentage <= 0
+      or width_config.max_width_percentage > 1
+    )
+  then
+    return false, "width.max_width_percentage must be a number between 0 and 1"
+  end
+
+  -- Check logical consistency
+  if width_config.min_width and width_config.max_width and width_config.min_width > width_config.max_width then
+    return false, "width.min_width cannot be greater than width.max_width"
+  end
+
+  return true
+end
+
+---Validate configuration
+---@param config Notifier.Config
+---@return boolean, string?
+---@private
+function Validator.validate_config(config)
+  -- Validate timeout
+  if config.default_timeout and (type(config.default_timeout) ~= "number" or config.default_timeout < 0) then
+    return false, "default_timeout must be a positive number"
+  end
+
+  -- Validate global winblend
+  if config.winblend and (type(config.winblend) ~= "number" or config.winblend < 0 or config.winblend > 100) then
+    return false, "winblend must be a number between 0 and 100"
+  end
+
+  -- Validate padding
+  if config.padding then
+    local function is_valid_padding(v)
+      return v == nil or (type(v) == "number" and v >= 0)
+    end
+    if
+      not (
+        is_valid_padding(config.padding.top)
+        and is_valid_padding(config.padding.right)
+        and is_valid_padding(config.padding.bottom)
+        and is_valid_padding(config.padding.left)
+      )
+    then
+      return false, "padding values must be non-negative numbers"
+    end
+  end
+
+  -- Validate group configs
+  if config.group_configs then
+    local valid_anchors = { NW = true, NE = true, SW = true, SE = true } -- Only corner anchors
+    local valid_center_modes = { ["true"] = true, horizontal = true, vertical = true }
+
+    for group_name, group_config in pairs(config.group_configs) do
+      if type(group_name) ~= "string" then
+        return false, "group config keys must be strings"
+      end
+      if not valid_anchors[group_config.anchor] then
+        return false,
+          string.format(
+            "invalid anchor '%s' for group '%s' (only NW, NE, SW, SE supported)",
+            tostring(group_config.anchor),
+            group_name
+          )
+      end
+      if type(group_config.row) ~= "number" or group_config.row < 0 then
+        return false, string.format("row must be non-negative number for group '%s'", group_name)
+      end
+      if type(group_config.col) ~= "number" or group_config.col < 0 then
+        return false, string.format("col must be non-negative number for group '%s'", group_name)
+      end
+      if
+        group_config.winblend
+        and (type(group_config.winblend) ~= "number" or group_config.winblend < 0 or group_config.winblend > 100)
+      then
+        return false, string.format("winblend must be 0-100 for group '%s'", group_name)
+      end
+      if group_config.center_mode and not valid_center_modes[group_config.center_mode] then
+        return false,
+          string.format("invalid center_mode '%s' for group '%s'", tostring(group_config.center_mode), group_name)
+      end
+    end
+  end
+
+  -- Validate width configuration
+  if config.width then
+    local valid, err = Validator.validate_width_config(config.width)
+    if not valid then
+      return false, err
+    end
+  end
+
+  return true, nil
 end
 
 -- ============================================================================
@@ -2092,7 +2331,7 @@ function M.setup(user_config)
 
   -- Validate and merge configuration
   local config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, user_config or {})
-  local valid, err = validate_config(config)
+  local valid, err = Validator.validate_config(config)
   if not valid then
     error("notifier.nvim: Invalid configuration: " .. err)
   end
