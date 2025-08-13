@@ -132,6 +132,17 @@ require("notifier").setup({
     },
   },
 
+  -- Width configuration
+  width = {
+    min_width = 20, -- Minimum notification width
+    max_width = nil, -- Maximum width (nil = auto-calculate)
+    preferred_width = 50, -- Preferred width when content fits
+    max_width_percentage = 0.4, -- Maximum width as percentage of screen
+    adaptive = true, -- Automatically adjust width based on content
+    wrap_text = true, -- Enable text wrapping for long lines
+    wrap_at_words = true, -- Wrap at word boundaries when possible
+  },
+
   -- Icons for different log levels
   icons = {
     [vim.log.levels.TRACE] = "󰔚 ",
