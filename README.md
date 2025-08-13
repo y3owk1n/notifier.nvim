@@ -5,7 +5,7 @@ A modern, feature-rich notification system for Neovim that transforms the standa
 ![Neovim](https://img.shields.io/badge/Neovim-0.10+-green.svg?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
 
-<https://github.com/user-attachments/assets/33563df9-f7d2-45de-8b78-c004b0ef2a36>
+<https://github.com/user-attachments/assets/c867b984-883f-475d-9946-d54fd96154a1>
 
 ## ✨ Features
 
@@ -53,6 +53,9 @@ require("notifier").setup({
 vim.notify("Hello, World!")
 vim.notify("Warning message", vim.log.levels.WARN)
 vim.notify("Error occurred", vim.log.levels.ERROR)
+
+-- Or you can try out the demo that we prepared to see what notifier.nvim can do
+require("notifier.demo").run_demo()
 ```
 
 ## ⚙️ Configuration
