@@ -63,6 +63,7 @@ Configuration                                                  *notifier.config*
 Default values:
 {
   default_timeout = 3000,
+  resize_debounce_ms = 150,
   border = "none",
   winblend = 0,
   padding = { top = 0, right = 0, bottom = 0, left = 0 },
@@ -335,6 +336,7 @@ Notifier.Config                                *notifier.public.Notifier.Config*
 
     Fields: ~
         {default_timeout?}          (integer)                                                                     Default timeout in milliseconds (default: 3000)
+        {resize_debounce_ms?}       (integer)                                                                     Debounce time for window resize events (default: 150)
         {border?}                   (string)                                                                      Border style for floating windows (default: "none")
         {winblend?}                 (integer)                                                                     Window transparency (0-100, default: 0)
         {icons?}                    (table<integer,string>)                                                       Icons for each log level (keys are vim.log.levels values)
