@@ -715,7 +715,7 @@ end
 ---@param ignore_padding? boolean Skip padding-based line filtering (default: false)
 function Utils.setup_virtual_text_hls(ns, bufnr, line_data, ignore_padding)
   ignore_padding = ignore_padding or false
-  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+  pcall(vim.api.nvim_buf_clear_namespace, bufnr, ns, 0, -1)
 
   ---@type Notifier.Config.Padding?
   local padding
@@ -739,14 +739,14 @@ function Utils.setup_virtual_text_hls(ns, bufnr, line_data, ignore_padding)
     for _, data in ipairs(reversed_line) do
       if data.is_virtual then
         -- Set virtual text with highlight
-        vim.api.nvim_buf_set_extmark(bufnr, ns, line_number - 1, data.col_start, {
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, line_number - 1, data.col_start, {
           virt_text = { { data.display_text, data.hl_group } },
           virt_text_pos = "inline",
         })
       else
         -- Set regular text highlight
         if data.col_start and data.col_end then
-          vim.api.nvim_buf_set_extmark(bufnr, ns, line_number - 1, data.col_start, {
+          pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, line_number - 1, data.col_start, {
             end_col = data.col_end,
             hl_group = data.hl_group,
           })
