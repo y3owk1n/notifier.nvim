@@ -100,7 +100,7 @@ Default values:
     ["left-center"] = {
       anchor = "NW",
       row = function()
-        return vim.o.lines / 2
+        return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2
       end,
       col = function()
         return 0
@@ -110,7 +110,7 @@ Default values:
     ["center"] = {
       anchor = "NW",
       row = function()
-        return vim.o.lines / 2
+        return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2
       end,
       col = function()
         return vim.o.columns / 2
@@ -120,7 +120,7 @@ Default values:
     ["right-center"] = {
       anchor = "NE",
       row = function()
-        return vim.o.lines / 2
+        return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2
       end,
       col = function()
         return vim.o.columns
@@ -130,7 +130,7 @@ Default values:
     ["bottom-left"] = {
       anchor = "SW",
       row = function()
-        return vim.o.lines - 2
+        return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)
       end,
       col = function()
         return 0
@@ -139,7 +139,7 @@ Default values:
     ["bottom-center"] = {
       anchor = "SW",
       row = function()
-        return vim.o.lines - 2
+        return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)
       end,
       col = function()
         return vim.o.columns / 2
@@ -149,7 +149,7 @@ Default values:
     ["bottom-right"] = {
       anchor = "SE",
       row = function()
-        return vim.o.lines - 2
+        return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)
       end,
       col = function()
         return vim.o.columns
