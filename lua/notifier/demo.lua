@@ -46,7 +46,7 @@ demo_steps[2] = function()
   for i, level_data in ipairs(levels) do
     vim.defer_fn(function()
       vim.notify(level_data[2], level_data[1], {
-        timeout = 3500,
+        timeout = 0,
       })
     end, (i - 1) * 800)
   end
