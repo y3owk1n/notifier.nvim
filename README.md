@@ -42,8 +42,12 @@ require("notifier").setup()
 ## 🚀 Quick Start
 
 ```lua
--- Basic setup with defaults
-require("notifier").setup()
+-- Basic setup with defaults, these are all you need to get started, unless you want to fine-tune the details
+require("notifier").setup({
+  animation = {
+    enabled = true
+  }
+})
 
 -- Now use enhanced vim.notify
 vim.notify("Hello, World!")
@@ -101,36 +105,36 @@ require("notifier").setup({
     },
     ["left-center"] = {
       anchor = "NW",
-      row = function() return vim.o.lines / 2 end,
+      row = function() return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2 end,
       col = function() return 0 end,
       center_mode = "vertical", -- Center vertically only
     },
     ["center"] = {
       anchor = "NW",
-      row = function() return vim.o.lines / 2 end,
+      row = function() return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2 end,
       col = function() return vim.o.columns / 2 end,
       center_mode = "true", -- Center both horizontally and vertically
     },
     ["right-center"] = {
       anchor = "NE",
-      row = function() return vim.o.lines / 2 end,
+      row = function() return (vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)) / 2 end,
       col = function() return vim.o.columns end,
       center_mode = "vertical", -- Center vertically only
     },
     ["bottom-left"] = {
       anchor = "SW",
-      row = function() return vim.o.lines - 2 end,
+      row = function() return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0) end,
       col = function() return 0 end,
     },
     ["bottom-center"] = {
       anchor = "SW",
-      row = function() return vim.o.lines - 2 end,
+      row = function() return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0) end,
       col = function() return vim.o.columns / 2 end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["bottom-right"] = {
       anchor = "SE",
-      row = function() return vim.o.lines - 2 end,
+      row = function() return vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0) end,
       col = function() return vim.o.columns end,
     },
   },
@@ -156,8 +160,8 @@ require("notifier").setup({
   }
 
   -- Formatters
-  notif_formatter = nil,
-  notif_history_formatter = nil,
+  notif_formatter = require("notifier").formatters.default_notif,
+  notif_history_formatter = require("notifier").formatters.default_history,
 
   -- Animation
   animation = {
@@ -816,6 +820,34 @@ vim.notify("", vim.log.levels.INFO, {
 
 ### Common Issues
 
+**Placements seems to be off for `bottom` and `center`:**
+
+- The defaults are calculated based on `cmdheight` and `laststatus`, you can override them as needed
+- Ensure that nothing is changing these values after the plugin is setup
+- If you're having some other plugins or autocomds that will alter these 2 values anytime, you can try setting the following autocmd
+
+```lua
+local old_laststatus = vim.o.laststatus
+local old_cmdheight = vim.o.cmdheight
+
+vim.api.nvim_create_autocmd("OptionSet", {
+  callback = function()
+    local notifier = require("notifier")
+
+    local new_laststatus = vim.o.laststatus
+    local new_cmdheight = vim.o.cmdheight
+
+    if new_laststatus ~= old_laststatus or new_cmdheight ~= old_cmdheight then
+      old_laststatus = new_laststatus
+      old_cmdheight = new_cmdheight
+
+      -- let the plugin recalculate positions
+      notifier._internal.utils.cache_config_group_row_col()
+    end
+  end,
+})
+```
+
 **Notifications not showing:**
 
 - Ensure you've called `require("notifier").setup()`
@@ -830,11 +862,6 @@ vim.notify("", vim.log.levels.INFO, {
 
 - Reduce `default_timeout` for faster cleanup
 - Consider using fewer notification groups
-
-**Window positioning problems:**
-
-- Adjust `row` and `col` values in `group_configs`
-- Check your terminal size with `:echo &columns` and `:echo &lines`
 
 ## 🤝 Contributing
 
