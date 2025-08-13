@@ -69,53 +69,89 @@
 ---  group_configs = {
 ---    ["top-left"] = {
 ---      anchor = "NW",
----      row = 0,
----      col = 0,
+---      row = function()
+---        return 0
+---      end,
+---      col = function()
+---        return 0
+---      end,
 ---    },
 ---    ["top-center"] = {
 ---      anchor = "NW",
----      row = 1,
----      col = vim.o.columns / 2,
+---      row = function()
+---        return 0
+---      end,
+---      col = function()
+---        return vim.o.columns / 2
+---      end,
 ---      center_mode = "horizontal", -- Center horizontally only
 ---    },
 ---    ["top-right"] = {
 ---      anchor = "NE",
----      row = 0,
----      col = vim.o.columns,
+---      row = function()
+---        return 0
+---      end,
+---      col = function()
+---        return vim.o.columns
+---      end,
 ---    },
 ---    ["left-center"] = {
 ---      anchor = "NW",
----      row = vim.o.lines / 2,
----      col = 1,
+---      row = function()
+---        return vim.o.lines / 2
+---      end,
+---      col = function()
+---        return 0
+---      end,
 ---      center_mode = "vertical", -- Center vertically only
 ---    },
 ---    ["center"] = {
 ---      anchor = "NW",
----      row = vim.o.lines / 2,
----      col = vim.o.columns / 2,
+---      row = function()
+---        return vim.o.lines / 2
+---      end,
+---      col = function()
+---        return vim.o.columns / 2
+---      end,
 ---      center_mode = "true", -- Center both horizontally and vertically
 ---    },
 ---    ["right-center"] = {
 ---      anchor = "NE",
----      row = vim.o.lines / 2,
----      col = vim.o.columns - 1,
+---      row = function()
+---        return vim.o.lines / 2
+---      end,
+---      col = function()
+---        return vim.o.columns
+---      end,
 ---      center_mode = "vertical", -- Center vertically only
 ---    },
 ---    ["bottom-left"] = {
 ---      anchor = "SW",
----      row = vim.o.lines - 2,
----      col = 0,
+---      row = function()
+---        return vim.o.lines - 2
+---      end,
+---      col = function()
+---        return 0
+---      end,
 ---    },
 ---    ["bottom-center"] = {
 ---      anchor = "SW",
----      row = vim.o.lines - 2,
----      col = vim.o.columns / 2,
+---      row = function()
+---        return vim.o.lines - 2
+---      end,
+---      col = function()
+---        return vim.o.columns / 2
+---      end,
 ---      center_mode = "horizontal", -- Center horizontally only
 ---    },
 ---    ["bottom-right"] = {
 ---      anchor = "SE",
----      row = vim.o.lines - 2,
----      col = vim.o.columns,
+---      row = function()
+---        return vim.o.lines - 2
+---      end,
+---      col = function()
+---        return vim.o.columns
+---      end,
 ---    },
 ---  },
 ---  width = {
@@ -151,14 +187,14 @@
 ---     group_configs = {
 ---       ["bottom-right"] = {
 ---         anchor = "SE",
----         row = vim.o.lines - 2,
----         col = vim.o.columns,
+---         row = function() return vim.o.lines - 2 end,
+---         col = function() return vim.o.columns end,
 ---         winblend = 20,
 ---       },
 ---       ["top-center"] = {
 ---         anchor = "N",
----         row = 1,
----         col = vim.o.columns / 2,
+---         row = function() return 1 end,
+---         col = function() return vim.o.columns / 2 end,
 ---         winblend = 0,
 ---       }
 ---     }
@@ -287,8 +323,10 @@ local setup_complete = false
 ---Group positioning and display configuration.
 ---@class Notifier.GroupConfigs
 ---@field anchor '"NW"'|'"NE"'|'"SW"'|'"SE"' Window anchor point for positioning
----@field row integer Row position relative to the editor
----@field col integer Column position relative to the editor
+---@field row fun(): integer Row position relative to the editor
+---@field col fun(): integer Column position relative to the editor
+---@field _cached_row? integer Cached row position relative to the editor, for internal use only
+---@field _cached_col? integer Cached column position relative to the editor, for internal use only
 ---@field winblend? integer Window transparency (0-100, default: 0)
 ---@field center_mode? '"true"'|'"horizontal"'|'"vertical"' Enable center positioning calculations
 
@@ -415,53 +453,89 @@ local DEFAULT_CONFIG = {
   group_configs = {
     ["top-left"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return 0
+      end,
     },
     ["top-center"] = {
       anchor = "NW",
-      row = 0,
-      col = vim.o.columns / 2,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["top-right"] = {
       anchor = "NE",
-      row = 0,
-      col = vim.o.columns,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return vim.o.columns
+      end,
     },
     ["left-center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = 1,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return 0
+      end,
       center_mode = "vertical", -- Center vertically only
     },
     ["center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = vim.o.columns / 2,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "true", -- Center both horizontally and vertically
     },
     ["right-center"] = {
       anchor = "NE",
-      row = vim.o.lines / 2,
-      col = vim.o.columns - 1,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return vim.o.columns
+      end,
       center_mode = "vertical", -- Center vertically only
     },
     ["bottom-left"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = 0,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return 0
+      end,
     },
     ["bottom-center"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = vim.o.columns / 2,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["bottom-right"] = {
       anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return vim.o.columns
+      end,
     },
   },
   width = {
@@ -1019,6 +1093,14 @@ function Utils.process_message_with_wrapping(msg, width, config)
   return processed_lines
 end
 
+---Calculate and cache row and column positions
+function Utils.cache_config_group_row_col()
+  for _, group in pairs(M.config.group_configs) do
+    group._cached_row = group.row()
+    group._cached_col = group.col()
+  end
+end
+
 -- ============================================================================
 -- GROUP MANAGEMENT
 -- ============================================================================
@@ -1057,8 +1139,8 @@ function GroupManager.get_group(name)
     focusable = false,
     style = "minimal",
     border = M.config.border,
-    row = group_config.row,
-    col = group_config.col,
+    row = group_config._cached_row or group_config.row(),
+    col = group_config._cached_col or group_config.col(),
     anchor = group_config.anchor, -- Always a valid corner anchor
     zindex = 200,
   }
@@ -1519,33 +1601,34 @@ function UI.render_group(group)
   local window_height = #lines
 
   -- Calculate position based on center_mode
-  local row, col, anchor = group.config.row, group.config.col, group.config.anchor
+  local row, col, anchor =
+    group.config._cached_row or group.config.row(), group.config._cached_col or group.config.col(), group.config.anchor
 
   if group.config.center_mode then
     if group.config.center_mode == "true" then
       -- Center both horizontally and vertically
-      row = math.max(0, group.config.row - math.floor(window_height / 2))
-      col = math.max(0, group.config.col - math.floor(window_width / 2))
+      row = math.max(0, row - math.floor(window_height / 2))
+      col = math.max(0, col - math.floor(window_width / 2))
       anchor = "NW" -- Always use NW when centering both dimensions
     elseif group.config.center_mode == "horizontal" then
       -- Center horizontally only
-      col = math.max(0, group.config.col - math.floor(window_width / 2))
+      col = math.max(0, col - math.floor(window_width / 2))
       -- Keep the original anchor for vertical positioning
       if anchor == "SW" or anchor == "SE" then
-        row = group.config.row
+        row = row
       else
-        row = group.config.row
+        row = row
       end
       -- Convert to NW/SW for horizontal centering
       anchor = (anchor == "SW" or anchor == "SE") and "SW" or "NW"
     elseif group.config.center_mode == "vertical" then
       -- Center vertically only
-      row = math.max(0, group.config.row - math.floor(window_height / 2))
+      row = math.max(0, row - math.floor(window_height / 2))
       -- Keep the original anchor for horizontal positioning
       if anchor == "NE" or anchor == "SE" then
-        col = group.config.col
+        col = col
       else
-        col = group.config.col
+        col = col
       end
       -- Convert to NW/NE for vertical centering
       anchor = (anchor == "NE" or anchor == "SE") and "NE" or "NW"
@@ -1943,12 +2026,13 @@ function Validator.validate_config(config)
             group_name
           )
       end
-      if type(group_config.row) ~= "number" or group_config.row < 0 then
-        return false, string.format("row must be non-negative number for group '%s'", group_name)
+      if type(group_config.row) ~= "function" then
+        return false, string.format("row must be a function that returns number for group '%s'", group_name)
       end
-      if type(group_config.col) ~= "number" or group_config.col < 0 then
-        return false, string.format("col must be non-negative number for group '%s'", group_name)
+      if type(group_config.col) ~= "function" then
+        return false, string.format("col must be a function that returns number for group '%s'", group_name)
       end
+
       if
         group_config.winblend
         and (type(group_config.winblend) ~= "number" or group_config.winblend < 0 or group_config.winblend > 100)
@@ -2232,37 +2316,7 @@ local function setup_autocmds()
         debounce_ms,
         0,
         vim.schedule_wrap(function()
-          -- Update group configs to new screen dimensions
-          if M.config and M.config.group_configs then
-            for _, group_config in pairs(M.config.group_configs) do
-              -- Update standard edge positions
-              if group_config.anchor:find("E") then
-                group_config.col = vim.o.columns
-              end
-              if group_config.anchor:find("S") then
-                group_config.row = vim.o.lines - 2
-              end
-
-              -- Update center positions based on center_mode
-              if group_config.center_mode then
-                if group_config.center_mode == "true" then
-                  -- True center
-                  group_config.row = vim.o.lines / 2
-                  group_config.col = vim.o.columns / 2
-                elseif group_config.center_mode == "horizontal" then
-                  -- Horizontal center only
-                  group_config.col = vim.o.columns / 2
-                elseif group_config.center_mode == "vertical" then
-                  -- Vertical center only
-                  group_config.row = vim.o.lines / 2
-                  -- Update right edge if needed
-                  if group_config.anchor:find("E") then
-                    group_config.col = vim.o.columns - 1
-                  end
-                end
-              end
-            end
-          end
+          Utils.cache_config_group_row_col()
           UI.debounce_render()
         end)
       )
@@ -2366,6 +2420,8 @@ function M.setup(user_config)
   end
 
   M.config = config
+
+  Utils.cache_config_group_row_col()
 
   -- Initialize systems
   init_state()

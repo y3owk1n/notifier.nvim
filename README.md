@@ -84,54 +84,54 @@ require("notifier").setup({
   group_configs = {
     ["top-left"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = function() return 0 end,
+      col = function() return 0 end,
       winblend = 0, -- overrides global winblend
     },
     ["top-center"] = {
       anchor = "NW",
-      row = 1,
-      col = vim.o.columns / 2,
+      row = function() return 0 end,
+      col = function() return vim.o.columns / 2 end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["top-right"] = {
       anchor = "NE",
-      row = 0,
-      col = vim.o.columns,
+      row = function() return 0 end,
+      col = function() return vim.o.columns end,
     },
     ["left-center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = 1,
+      row = function() return vim.o.lines / 2 end,
+      col = function() return 0 end,
       center_mode = "vertical", -- Center vertically only
     },
     ["center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = vim.o.columns / 2,
+      row = function() return vim.o.lines / 2 end,
+      col = function() return vim.o.columns / 2 end,
       center_mode = "true", -- Center both horizontally and vertically
     },
     ["right-center"] = {
       anchor = "NE",
-      row = vim.o.lines / 2,
-      col = vim.o.columns - 1,
+      row = function() return vim.o.lines / 2 end,
+      col = function() return vim.o.columns end,
       center_mode = "vertical", -- Center vertically only
     },
     ["bottom-left"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = 0,
+      row = function() return vim.o.lines - 2 end,
+      col = function() return 0 end,
     },
     ["bottom-center"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = vim.o.columns / 2,
+      row = function() return vim.o.lines - 2 end,
+      col = function() return vim.o.columns / 2 end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["bottom-right"] = {
       anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
+      row = function() return vim.o.lines - 2 end,
+      col = function() return vim.o.columns end,
     },
   },
 
@@ -179,8 +179,8 @@ require("notifier").setup({
   group_configs = {
     ["bottom-right"] = {
       anchor = "SE",
-      row = vim.o.lines - 3, -- Leave more space from bottom
-      col = vim.o.columns - 1,
+      row = function() return vim.o.lines - 3 end, -- Leave more space from bottom
+      col = function() return vim.o.columns - 1 end,
       winblend = 20, -- Semi-transparent
     }
   },
