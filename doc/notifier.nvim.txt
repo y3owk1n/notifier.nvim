@@ -71,53 +71,89 @@ Default values:
   group_configs = {
     ["top-left"] = {
       anchor = "NW",
-      row = 0,
-      col = 0,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return 0
+      end,
     },
     ["top-center"] = {
       anchor = "NW",
-      row = 1,
-      col = vim.o.columns / 2,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["top-right"] = {
       anchor = "NE",
-      row = 0,
-      col = vim.o.columns,
+      row = function()
+        return 0
+      end,
+      col = function()
+        return vim.o.columns
+      end,
     },
     ["left-center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = 1,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return 0
+      end,
       center_mode = "vertical", -- Center vertically only
     },
     ["center"] = {
       anchor = "NW",
-      row = vim.o.lines / 2,
-      col = vim.o.columns / 2,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "true", -- Center both horizontally and vertically
     },
     ["right-center"] = {
       anchor = "NE",
-      row = vim.o.lines / 2,
-      col = vim.o.columns - 1,
+      row = function()
+        return vim.o.lines / 2
+      end,
+      col = function()
+        return vim.o.columns
+      end,
       center_mode = "vertical", -- Center vertically only
     },
     ["bottom-left"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = 0,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return 0
+      end,
     },
     ["bottom-center"] = {
       anchor = "SW",
-      row = vim.o.lines - 2,
-      col = vim.o.columns / 2,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return vim.o.columns / 2
+      end,
       center_mode = "horizontal", -- Center horizontally only
     },
     ["bottom-right"] = {
       anchor = "SE",
-      row = vim.o.lines - 2,
-      col = vim.o.columns,
+      row = function()
+        return vim.o.lines - 2
+      end,
+      col = function()
+        return vim.o.columns
+      end,
     },
   },
   width = {
@@ -153,14 +189,14 @@ Configure different notification groups for various positions:
      group_configs = {
        ["bottom-right"] = {
          anchor = "SE",
-         row = vim.o.lines - 2,
-         col = vim.o.columns,
+         row = function() return vim.o.lines - 2 end,
+         col = function() return vim.o.columns end,
          winblend = 20,
        },
        ["top-center"] = {
          anchor = "N",
-         row = 1,
-         col = vim.o.columns / 2,
+         row = function() return 1 end,
+         col = function() return vim.o.columns / 2 end,
          winblend = 0,
        }
      }
@@ -269,8 +305,10 @@ Notifier.GroupConfigs                    *notifier.public.Notifier.GroupConfigs*
 
     Fields: ~
         {anchor}        ("NW"|"NE"|"SW"|"SE")             Window anchor point for positioning
-        {row}           (integer)                         Row position relative to the editor
-        {col}           (integer)                         Column position relative to the editor
+        {row}           (fun():integer)                   Row position relative to the editor
+        {col}           (fun():integer)                   Column position relative to the editor
+        {_cached_row?}  (integer)                         Cached row position relative to the editor, for internal use only
+        {_cached_col?}  (integer)                         Cached column position relative to the editor, for internal use only
         {winblend?}     (integer)                         Window transparency (0-100, default: 0)
         {center_mode?}  ("true"|"horizontal"|"vertical")  Enable center positioning calculations
 
