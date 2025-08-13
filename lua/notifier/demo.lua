@@ -174,22 +174,38 @@ demo_steps[6] = function()
   vim.notify("Custom icon notification", vim.log.levels.INFO, {
     icon = "󰚩 ",
     hl_group = "String",
-    timeout = 3500,
+    timeout = 0,
   })
 
   vim.defer_fn(function()
     vim.notify("Another custom style", vim.log.levels.WARN, {
       icon = "󰓇 ",
       hl_group = "Identifier",
-      timeout = 3500,
+      timeout = 0,
     })
   end, 800)
 
   vim.defer_fn(function()
-    vim.notify("And one more!", vim.log.levels.ERROR, {
-      icon = "󰙦 ",
-      hl_group = "Special",
-      timeout = 3500,
+    vim.notify("This can also be rainbow color", vim.log.levels.WARN, {
+      icon = "  ",
+      timeout = 0,
+      _notif_formatter = function(opts)
+        local colors = { "Function", "Type", "Keyword", "Number", "Operator", "Comment" }
+        local parts = {}
+
+        local texts = vim.split(opts.line, " ")
+
+        table.insert(parts, { display_text = opts.notif.icon, hl_group = "Title" })
+
+        for i, text in ipairs(texts) do
+          table.insert(parts, { display_text = text, hl_group = colors[(i % #colors) + 1] })
+          if i ~= #texts then
+            table.insert(parts, { display_text = " " })
+          end
+        end
+
+        return parts
+      end,
     })
   end, 1600)
 end
