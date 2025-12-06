@@ -323,8 +323,7 @@ Notifier.Config.Padding                *notifier.public.Notifier.Config.Padding*
         {left?}    (integer)  Left padding in characters (default: 0)
 
 
-                                   *notifier.public.Notifier.FormattedNotifOpts*
-Notifier.FormattedNotifOpts
+Notifier.FormattedNotifOpts        *notifier.public.Notifier.FormattedNotifOpts*
     Raw formatted notification piece before position computation.
 
     Fields: ~
@@ -399,8 +398,7 @@ Notifier.Config.Width                    *notifier.public.Notifier.Config.Width*
         {wrap_at_words?}         (boolean)  Wrap at word boundaries when possible (default: true)
 
 
-                                     *notifier.public.Notifier.Config.Animation*
-Notifier.Config.Animation
+Notifier.Config.Animation            *notifier.public.Notifier.Config.Animation*
     Animation configuration.
 
     Fields: ~
